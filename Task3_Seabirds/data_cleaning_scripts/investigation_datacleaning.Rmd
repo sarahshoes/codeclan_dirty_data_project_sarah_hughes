@@ -1,0 +1,136 @@
+---
+title: "Workbook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(here)
+library(skimr)
+library(janitor)
+```
+
+
+```{r}
+ship_data  <- read_excel(here::here("raw_data/seabirds.xls"), sheet = "Ship data by record ID")
+bird_data  <- read_excel(here::here("raw_data/seabirds.xls"), sheet = "Bird data by record ID")
+
+#tidy up variable names
+bird_clean <- clean_names(bird_data) 
+ship_clean <- clean_names(ship_data) 
+```
+```{r}
+names(bird_clean)
+names(ship_clean)
+```
+** Notes**
+In this analysis we are interested 
+in bird names as scientific name, common name and species abbrev. 
+also sighting info time, date, lat and long?
+
+First remove columns we don't need and rename columns for ease of use
+
+```{r}
+ship_clean <- ship_clean %>% 
+  select(record, 
+         record_id,
+         date,
+         time,
+         lat,
+         long, 
+         long360)
+```
+
+
+```{r}
+bird_clean <- bird_clean %>% 
+  select(record, 
+         record_id,
+         species_common_name_taxon_age_sex_plumage_phase, 
+         species_scientific_name_taxon_age_sex_plumage_phase,
+         species_abbreviation, 
+         age,
+         wanplum,
+         plphase,
+         sex,
+         count) %>% 
+  # rename variables to make them easier to work with
+  rename(species_common_name = 
+           species_common_name_taxon_age_sex_plumage_phase) %>% 
+  rename(species_science_name =
+           species_scientific_name_taxon_age_sex_plumage_phase)
+```
+
+```{r}
+skim(bird_clean)
+```
+```{r}
+skim(ship_clean)
+```
+
+```{r}
+# There are no missing records for species_common_name
+# recode [NO BIRD RECORDED] as NA 
+bird_clean <- bird_clean %>%
+   mutate(species_common_name = na_if(species_common_name,"[NO BIRDS RECORDED]")) %>% 
+   drop_na(species_common_name)
+```
+
+
+
+```{r}
+#take a look at species info
+bird_clean %>% 
+  distinct(species_common_name) %>% 
+  arrange(species_common_name)
+```
+```{r}
+#take a look at species info
+bird_clean %>% 
+  filter(!is.na(age)) %>% 
+  arrange(species_abbreviation)
+```
+# species name contains additional info on age, sex, plumage phase that is not needed for this analyis
+# assume we are just interested in the species
+# this additional data can be removed into a seperate column
+
+```{r}
+# test how we extract info
+names(bird_clean)
+
+bird_clean <- bird_clean %>% 
+  separate(species_abbreviation, c("spec_abbrev", "spec_abbrev_add1","spec_abbrev_add2")," ")
+```
+```{r}
+bird_clean %>% 
+#distinct(age)
+distinct(spec_abbrev_add1)
+```
+** Notes
+looks like ages, sex and plumage columns can hep identify additional data to be removed from species names
+?? sensu lato
+
+```{r}
+age_codes <- distinct(bird_clean, age) 
+drop_na(age_codes, age)
+plum_codes <- distinct(bird_clean, wanplum)
+drop_na(plum_codes,wanplum)
+phase_codes <- distinct(bird_clean, plphase)
+drop_na(phase_codes, plphase)
+sex_codes <- distinct(bird_clean, sex)
+drop_na(sex_codes, sex)
+```
+
+```{r}
+ship_clean %>% 
+  distinct(ew)
+```
+
+```{r}
+seabirds_clean <- seabirds_raw %>%
+  select(record_id,lat,long360, )
+  mutate(long2 = if_else(ew == "W", -1*long,long))
+seabirds_clean
+```
+ 
