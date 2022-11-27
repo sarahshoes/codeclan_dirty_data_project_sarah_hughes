@@ -14,16 +14,21 @@ library(janitor)
 
 ```{r}
 ship_data  <- read_excel(here::here("raw_data/seabirds.xls"), sheet = "Ship data by record ID")
-bird_data  <- read_excel(here::here("raw_data/seabirds.xls"), sheet = "Bird data by record ID")
+bird_data  <- read_excel(here::here("raw_data/seabirds.xls"), 
+                         sheet = "Bird data by record ID",
+                         col_type = c("text"))
+# error reading sex column as logical
 
 #tidy up variable names
 bird_clean <- clean_names(bird_data) 
 ship_clean <- clean_names(ship_data) 
 ```
+
 ```{r}
 names(bird_clean)
 names(ship_clean)
 ```
+
 ** Notes**
 In this analysis we are interested 
 in bird names as scientific name, common name and species abbrev. 
@@ -50,11 +55,13 @@ bird_clean <- bird_clean %>%
          species_common_name_taxon_age_sex_plumage_phase, 
          species_scientific_name_taxon_age_sex_plumage_phase,
          species_abbreviation, 
+         # following columns are needed for cleaning
          age,
          wanplum,
          plphase,
          sex,
          count) %>% 
+  
   # rename variables to make them easier to work with
   rename(species_common_name = 
            species_common_name_taxon_age_sex_plumage_phase) %>% 
@@ -68,10 +75,13 @@ skim(bird_clean)
 ```{r}
 skim(ship_clean)
 ```
+```{r}
+bird_clean %>% 
+  distinct(sex)
+```
 
 ```{r}
-# There are no missing records for species_common_name
-# recode [NO BIRD RECORDED] as NA 
+# recode [NO BIRDS RECORDED] as NA 
 bird_clean <- bird_clean %>%
    mutate(species_common_name = na_if(species_common_name,"[NO BIRDS RECORDED]")) %>% 
    drop_na(species_common_name)
@@ -86,8 +96,15 @@ bird_clean %>%
   arrange(species_common_name)
 ```
 ```{r}
+# set numeric variables back
+bird_clean <- bird_clean %>% 
+  mutate(record_id =  as_numeric(record_id)) %>% 
+  mutate(record = as.numeric(record))       
+```
+```{r}
 #take a look at species info
-bird_clean %>% 
+bird_clean %>%
+  select(age, species_abbreviation) %>% 
   filter(!is.na(age)) %>% 
   arrange(species_abbreviation)
 ```
@@ -97,30 +114,112 @@ bird_clean %>%
 
 ```{r}
 # test how we extract info
-names(bird_clean)
+#names(bird_clean)
 
-bird_clean <- bird_clean %>% 
-  separate(species_abbreviation, c("spec_abbrev", "spec_abbrev_add1","spec_abbrev_add2")," ")
-```
+#bird_clean <- bird_clean %>% 
+#  separate(species_abbreviation, c("spec_abbrev", #"spec_abbrev_add1","spec_abbrev_add2")," ")
+#```
 ```{r}
-bird_clean %>% 
+#bird_clean %>% 
 #distinct(age)
-distinct(spec_abbrev_add1)
+#distinct(spec_abbrev_add1)
 ```
+
 ** Notes
 looks like ages, sex and plumage columns can hep identify additional data to be removed from species names
 ?? sensu lato
 
 ```{r}
-age_codes <- distinct(bird_clean, age) 
-drop_na(age_codes, age)
-plum_codes <- distinct(bird_clean, wanplum)
-drop_na(plum_codes,wanplum)
-phase_codes <- distinct(bird_clean, plphase)
-drop_na(phase_codes, plphase)
-sex_codes <- distinct(bird_clean, sex)
-drop_na(sex_codes, sex)
+age_codes <- distinct(bird_clean, age) %>% 
+drop_na(age) %>% 
+  pull()
+plum_codes <- distinct(bird_clean, wanplum) %>% 
+drop_na(wanplum) %>% 
+pull()
+plum_codes <- str_c("PL",plum_codes)
+phase_codes <- distinct(bird_clean, plphase) %>% 
+drop_na(plphase) %>% 
+pull()  
+sex_codes <- distinct(bird_clean, sex) %>% 
+drop_na(sex) %>% 
+pull()
 ```
+
+```{r}
+# keeps going until all strings have been removed
+strip_strings <- function(old_column, strings){
+  cleaned <- old_column
+  
+  # order strings longest first so "string within string" is not a problem
+  order <- sort(nchar(strings), decreasing=TRUE, index.return=TRUE)
+  strings <- strings[order$ix]
+
+  for (badstring in strings){
+    cleaned <- str_remove(cleaned,badstring)
+    cleaned <- str_trim(cleaned)
+  }
+    return(cleaned)  
+}
+```
+
+
+```{r}
+#testing use of string_remove_all
+testdata <-  c("dog AA","catCC BB","hBBorse AAB","big mouse AA BB") 
+testdata1 <- str_remove_all(testdata,c("AA","BB","CC","AAB"))
+testdata1
+#doesn't capture all instances of all strings - maybe because I am not using it correctly?
+
+#test strip_strings function
+cleandata <-  strip_strings(testdata,c("AA","BB","CC","AAB"))
+cleandata
+```
+
+```{r}
+#now use codes to clean species_common_name
+bird_clean <- bird_clean %>% 
+  mutate(species_common_clean = strip_strings(species_common_name, age_codes)) %>% 
+  mutate(species_common_clean = strip_strings(species_common_clean, plum_codes)) %>% 
+  mutate(species_common_clean = strip_strings(species_common_clean, phase_codes)) %>% 
+  mutate(species_common_clean = strip_strings(species_common_clean, sex_codes)) 
+```
+```{r}
+#now use codes to clean species_scientific_name
+bird_clean <- bird_clean %>% 
+  mutate(species_science_clean = strip_strings(species_science_name, age_codes)) %>% 
+  mutate(species_science_clean = strip_strings(species_science_clean, plum_codes)) %>% 
+  mutate(species_science_clean = strip_strings(species_science_clean, phase_codes)) %>% 
+  mutate(species_science_clean = strip_strings(species_science_clean, sex_codes)) 
+```
+
+```{r}
+#now use codes to clean species_scientific_name
+bird_clean <- bird_clean %>% 
+  mutate(species_abbrev_clean = strip_strings(species_abbreviation, age_codes)) %>% 
+  mutate(species_abbrev_clean = strip_strings(species_abbrev_clean, plum_codes)) %>% 
+  mutate(species_abbrev_clean = strip_strings(species_abbrev_clean, phase_codes)) %>% 
+  mutate(species_abbrev_clean = strip_strings(species_abbrev_clean, sex_codes)) 
+```
+
+
+
+```{r}
+bird_clean %>% 
+  select(age, species_common_clean) %>% 
+  filter(!is.na(age)) %>% 
+  group_by(age) %>% 
+  mutate(count = n())
+```
+
+
+
+```{r}
+bird_clean %>% 
+distinct(species_common_clean) %>% 
+arrange(species_common_clean)
+```
+
+
 
 ```{r}
 ship_clean %>% 
