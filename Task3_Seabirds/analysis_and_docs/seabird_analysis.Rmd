@@ -1,0 +1,134 @@
+---
+title: "Task 3 - Seabird"
+output: html_notebook
+---
+  
+  # ============================================================================
+  
+  #  ----- File Name: seabird_analysis.Rmd
+  #  ----- Description: Analysis of seabird data
+  #  ----- Output: Analysis of seabird data, examining rate of observation
+     and abundance of various seabirds
+  #  ----- Created Date: 28th Nov 2022
+  #  ----- Created By: Sarah Hughes
+  
+  # ============================================================================
+  
+  #  ----- Assumptions: 
+    Where there is species data in a record but the species count is 'NA' 
+    sets abundance as 1, e.g at least 1 bird was observed.
+  
+  # ============================================================================
+  
+  #  ----- Version History: v0.1
+  
+  # ============================================================================
+  
+  #  ----- Peer reviewer:
+  
+  #  ----- Peer review date:
+  
+  # ============================================================================
+  
+
+```{r Load libraries}
+# load libraries
+library(tidyverse)
+library(skimr)
+library(assertr)
+library(here)
+library(testthat)
+```
+`
+```{r Data Cleaning Script}
+# call data cleaning script
+source(here("data_cleaning_scripts","cleaning_bird_data.R")) 
+```
+
+```{r Load Cleaned data}
+# read in cleaned data
+clean_data <- read_csv(here("clean_data","joined_bird_data.csv"))
+```
+### Q1 Which bird has most individual sightings? 
+### One way to interpret this is which bird was seen in the biggest group on one individual sighting?
+
+```{r}
+joined_bird_data %>% 
+  select(species_common_clean,species_science_clean,species_abbrev_clean,abundance) %>% 
+  arrange(desc(abundance)) %>% 
+  distinct(species_common_clean,species_science_clean,species_abbrev_clean,abundance) %>% 
+  #recode high abundance for clarity in summary table
+  mutate(abundance = as.character(abundance)) %>% 
+  mutate(abundance = recode(abundance, "99999" = ">100,000")) %>% 
+  head(5)
+```
+### Both the Short-tailed shearwater and the Prion were spotted in groups of greater than 100,000
+
+### Q1 Which bird had the most individual sightings? 
+### Another way is to count number of individual records for each type of bird and find the highest
+```{r} 
+joined_bird_data %>% 
+  group_by(species_common_clean) %>% 
+  mutate(sightings_count = n()) %>% 
+  arrange(desc(sightings_count)) %>% 
+  distinct(species_common_clean,species_science_clean,species_abbrev_clean,sightings_count) %>% 
+  head(1)
+```
+### The wandering albatross was observed in 11293 individual sighting records
+```{r}
+#check this
+joined_bird_data %>% 
+  filter(species_abbrev_clean == "DIOANTEXU") %>% 
+  nrow
+```
+
+### Q2 Which bird had the highest total abundance
+```{r}
+joined_bird_data %>% 
+  group_by(species_common_clean,species_science_clean,species_abbrev_clean) %>% 
+  summarise(total_bird_abundance = sum(abundance)) %>%
+  arrange(desc(total_bird_abundance)) %>% 
+  head(5)
+```
+### The bird seen with highest abundance was the Short-tailed shearwater, more than 982,669 were seen in total
+    
+
+### Q3 Which bird had the highest total count above latitude -30
+```{r}
+joined_bird_data %>% 
+  filter(lat >-30) %>% 
+  group_by(species_common_clean,species_science_clean,species_abbrev_clean) %>% 
+  summarise(total_bird_abundance = sum(abundance)) %>%
+  arrange(desc(total_bird_abundance)) %>% 
+  head(5)
+```
+### The Wedge-tailed shearwater was observed in 855 individual sighting records
+
+### Q4 How many birds were seen only in groups of one?
+```{r}
+joined_bird_data %>% 
+  filter(abundance == 1) %>% 
+  group_by(species_common_clean,species_science_clean,species_abbrev_clean) %>%
+  distinct(species_common_clean) %>% 
+  nrow
+```
+### 150 different types of birds were only seen in groups of 1 
+
+### Q5 First checl how many types of penguins were seen?
+```{r}
+
+joined_bird_data %>% 
+  filter(str_detect(str_to_lower(species_common_clean), "penguin")) %>% 
+  group_by(species_common_clean,species_science_clean,species_abbrev_clean) %>% 
+  summarise(count_penguin_obs =  n(), abundance_penguins = sum(abundance)) %>% 
+  arrange(desc(count_penguin_obs))
+```
+### There were 7 different types of penguins
+
+### Q5 How many total penguins were seen?
+```{r}
+joined_bird_data %>% 
+   filter(str_detect(str_to_lower(species_common_clean), "penguin"))  %>% 
+    summarise(total_abundance_penguins = sum(abundance)) 
+```
+### 162 penguins seen in total

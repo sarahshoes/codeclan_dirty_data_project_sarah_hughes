@@ -29,6 +29,18 @@ names(bird_clean)
 names(ship_clean)
 ```
 
+```{r}
+# check occurrence data - there can be a mismatch between the count and the specific numbers
+# not helpful for filling in gaps in count
+bird_clean %>% 
+  select(count, nfeed, nsow, nsoice, nflyp, nacc, nfoll) %>% 
+  mutate(across(c(nfeed,nsow,nsoice,nflyp,nacc,nfoll), as.numeric)) %>% 
+  mutate(count_check = rowSums(across(c(nfeed,nsow,nsoice,nflyp, nacc, nfoll)))) %>% 
+  select(count, count_check, nfeed, nsow, nsoice, nflyp, nacc, nfoll) %>% 
+  filter((is.na(count) & (count_check>0)))
+```
+
+
 ** Notes**
 In this analysis we are interested 
 in bird names as scientific name, common name and species abbrev. 
@@ -77,7 +89,7 @@ skim(ship_clean)
 ```
 ```{r}
 bird_clean %>% 
-  distinct(sex)
+  distinct(species_abbreviation)
 ```
 
 ```{r}
@@ -85,6 +97,29 @@ bird_clean %>%
 bird_clean <- bird_clean %>%
    mutate(species_common_name = na_if(species_common_name,"[NO BIRDS RECORDED]")) %>% 
    drop_na(species_common_name)
+```
+
+```{r}
+# original thought to code PL6 as an error
+#later decided to allow it as its being removed anyway - assume code in wanplum column is correct
+#bird_clean %>% 
+#   mutate(species_common_clean = if_else(
+#     str_sub(species_common_name, -3, -1) == "PL6",
+#     NA, species_common_name)
+#       ))
+```
+```{r}
+# fix coding errors - also no longer needed as changed strategy
+# this will be removed later anyway but its the right way to remove it!
+#bird_clean %>% 
+#   mutate(species_common_clean =    #str_replace(species_common_name,"PL6","PL5")
+#       ) %>%
+#   mutate(species_science_clean =    #str_replace(species_science_name,"PL6","PL5")
+#       ) %>%
+#   mutate(species_abbrev_clean=    #str_replace(species_abbreviation,"PL6","PL5")
+#       ) %>%  
+#filter(str_detect(species_common_name,"PL6")) %>% 
+#select(species_common_name, species_common_clean, wanplum)         
 ```
 
 
@@ -98,8 +133,9 @@ bird_clean %>%
 ```{r}
 # set numeric variables back
 bird_clean <- bird_clean %>% 
-  mutate(record_id =  as_numeric(record_id)) %>% 
-  mutate(record = as.numeric(record))       
+  mutate(record_id = as.numeric(record_id)) %>% 
+  mutate(record = as.numeric(record)) %>% 
+  mutate(count = as.numeric(count))
 ```
 ```{r}
 #take a look at species info
@@ -115,34 +151,53 @@ bird_clean %>%
 ```{r}
 # test how we extract info
 #names(bird_clean)
-
-#bird_clean <- bird_clean %>% 
-#  separate(species_abbreviation, c("spec_abbrev", #"spec_abbrev_add1","spec_abbrev_add2")," ")
-#```
-```{r}
-#bird_clean %>% 
-#distinct(age)
-#distinct(spec_abbrev_add1)
 ```
+
 
 ** Notes
 looks like ages, sex and plumage columns can hep identify additional data to be removed from species names
 ?? sensu lato
 
 ```{r}
-age_codes <- distinct(bird_clean, age) %>% 
-drop_na(age) %>% 
+# original version
+#age_codes <- distinct(bird_clean, age) %>% 
+#drop_na(age) %>% 
+#  pull()
+#plum_codes <- distinct(bird_clean, wanplum) %>% 
+#drop_na(wanplum) %>% 
+#pull()
+#plum_codes <- str_c("PL",plum_codes)
+#phase_codes <- distinct(bird_clean, plphase) %>% 
+#drop_na(plphase) %>% 
+#pull()  
+#sex_codes <- distinct(bird_clean, sex) %>% 
+#drop_na(sex) %>% 
+#pull()
+```
+```{r}
+#an easier way is to identify any additional codes from species_abbreviation
+extra_codes <- bird_clean %>%
+  select(species_abbreviation) %>% 
+  separate(species_abbreviation, 
+           c("spec_abbrev", "extra1","extra2")," ")
+# union finds unique values 
+combined_codes <- as_tibble (union_all(extra_codes$extra1,extra_codes$extra2)) %>% 
+  drop_na() %>% 
+  distinct() %>% 
   pull()
-plum_codes <- distinct(bird_clean, wanplum) %>% 
-drop_na(wanplum) %>% 
-pull()
-plum_codes <- str_c("PL",plum_codes)
-phase_codes <- distinct(bird_clean, plphase) %>% 
-drop_na(plphase) %>% 
-pull()  
-sex_codes <- distinct(bird_clean, sex) %>% 
-drop_na(sex) %>% 
-pull()
+# some birds are coded with more than one identifier
+# extracting extra 1 and extra 2 allows for case where unique info could be captured this way
+# as it is  - nothing new comes from extra2 its just LGHT and DRK
+# this code would fail if there were three identifiers. Is it possible to count spaces and so identify how many columns needed. Mayb leavee for another task!
+
+# this captures the problematic coding of ADF and PL6 which were left behind by previous attempt
+  
+
+```
+```{r}
+#bird_clean %>% 
+#distinct(age)
+#distinct(spec_abbrev_add1)
 ```
 
 ```{r}
@@ -155,7 +210,8 @@ strip_strings <- function(old_column, strings){
   strings <- strings[order$ix]
 
   for (badstring in strings){
-    cleaned <- str_remove(cleaned,badstring)
+    cleaned <- str_remove(cleaned,str_c(" ",badstring)) #adding this doesn't allow for a string to be 'embedded'
+    #in this case it fixes problem of accidentally removing 'F' and 'M' at the start of species name
     cleaned <- str_trim(cleaned)
   }
     return(cleaned)  
@@ -165,10 +221,11 @@ strip_strings <- function(old_column, strings){
 
 ```{r}
 #testing use of string_remove_all
-testdata <-  c("dog AA","catCC BB","hBBorse AAB","big mouse AA BB") 
+testdata <-  c("dog AA","catCC BB","BBhorse AAB","big mouse AA BB") 
 testdata1 <- str_remove_all(testdata,c("AA","BB","CC","AAB"))
 testdata1
 #doesn't capture all instances of all strings - maybe because I am not using it correctly?
+
 
 #test strip_strings function
 cleandata <-  strip_strings(testdata,c("AA","BB","CC","AAB"))
@@ -177,30 +234,52 @@ cleandata
 
 ```{r}
 #now use codes to clean species_common_name
-bird_clean <- bird_clean %>% 
-  mutate(species_common_clean = strip_strings(species_common_name, age_codes)) %>% 
-  mutate(species_common_clean = strip_strings(species_common_clean, plum_codes)) %>% 
-  mutate(species_common_clean = strip_strings(species_common_clean, phase_codes)) %>% 
-  mutate(species_common_clean = strip_strings(species_common_clean, sex_codes)) 
+#bird_clean <- bird_clean %>% 
+#  mutate(species_common_clean = strip_strings(species_common_name, #age_codes)) %>% 
+#  mutate(species_common_clean = strip_strings(species_common_clean, #plum_codes)) %>% 
+#  mutate(species_common_clean = strip_strings(species_common_clean, #phase_codes)) %>% 
+#  mutate(species_common_clean = strip_strings(species_common_clean, #sex_codes)) 
 ```
 ```{r}
 #now use codes to clean species_scientific_name
-bird_clean <- bird_clean %>% 
-  mutate(species_science_clean = strip_strings(species_science_name, age_codes)) %>% 
-  mutate(species_science_clean = strip_strings(species_science_clean, plum_codes)) %>% 
-  mutate(species_science_clean = strip_strings(species_science_clean, phase_codes)) %>% 
-  mutate(species_science_clean = strip_strings(species_science_clean, sex_codes)) 
+#bird_clean <- bird_clean %>% 
+#  mutate(species_science_clean = strip_strings(species_science_name, #age_codes)) %>% 
+#  mutate(species_science_clean = strip_strings(species_science_clean, #plum_codes)) %>% 
+#  mutate(species_science_clean = strip_strings(species_science_clean, #phase_codes)) %>% 
+#  mutate(species_science_clean = strip_strings(species_science_clean, #sex_codes)) 
 ```
 
 ```{r}
-#now use codes to clean species_scientific_name
-bird_clean <- bird_clean %>% 
-  mutate(species_abbrev_clean = strip_strings(species_abbreviation, age_codes)) %>% 
-  mutate(species_abbrev_clean = strip_strings(species_abbrev_clean, plum_codes)) %>% 
-  mutate(species_abbrev_clean = strip_strings(species_abbrev_clean, phase_codes)) %>% 
-  mutate(species_abbrev_clean = strip_strings(species_abbrev_clean, sex_codes)) 
+#now use codes to clean species_abbreviation
+#bird_clean <- bird_clean %>% 
+#  mutate(species_abbrev_clean = strip_strings(species_abbreviation, #age_codes)) %>% 
+#  mutate(species_abbrev_clean = strip_strings(species_abbrev_clean, #plum_codes)) %>% 
+#  mutate(species_abbrev_clean = strip_strings(species_abbrev_clean, #phase_codes)) %>% 
+#  mutate(species_abbrev_clean = strip_strings(species_abbrev_clean, #sex_codes)) 
 ```
 
+```{r}
+#now use codes to clean species_common_name
+bird_clean <- bird_clean %>% 
+  mutate(species_common_clean = strip_strings(species_common_name, combined_codes)) %>% 
+  mutate(species_science_clean = strip_strings(species_science_name, combined_codes)) %>% 
+  mutate(species_abbrev_clean = strip_strings(species_abbreviation, combined_codes)) 
+```
+
+```{r}
+# 1 case of ADF
+bird_clean %>% 
+  select(species_science_name,age,sex,species_science_clean) %>% 
+  filter(str_detect(species_science_name, "ADF"))
+
+```
+
+```{r}
+# 1 case of PL6
+bird_clean %>% 
+  select(species_science_name,wanplum,species_science_clean) %>% 
+  filter(str_detect(species_science_name, "PL6"))
+```
 
 
 ```{r}
@@ -210,14 +289,89 @@ bird_clean %>%
   group_by(age) %>% 
   mutate(count = n())
 ```
+```{r}
+bird_clean %>% 
+  select(species_common_clean, species_science_clean, species_abbrev_clean) %>% 
+  filter(str_detect(species_abbrev_clean, "PEN")) 
+  #distinct(species_common_clean,species_science_clean,species_abbrev_clean) 
+```
+```{r}
+bird_clean %>% 
+  select(species_common_clean, species_science_clean, species_abbrev_clean,count) %>% 
+  filter(str_detect(species_common_clean, "penguin")) 
+  #distinct(species_common_clean,species_science_clean,species_abbrev_clean) 
+```
 
+```{r}
+bird_clean %>% 
+  select(species_common_clean, species_science_clean, species_abbrev_clean) %>% 
+  filter(is.na(species_science_clean)) %>% 
+  distinct(species_common_clean,species_science_clean,species_abbrev_clean) 
+```
+
+```{r}
+bird_clean %>% 
+  select(species_common_clean, species_science_clean, species_abbrev_clean) %>% 
+  filter(str_detect(species_common_clean, "penguin")) %>% 
+  distinct(species_common_clean,species_science_clean,species_abbrev_clean) 
+```
 
 
 ```{r}
 bird_clean %>% 
-distinct(species_common_clean) %>% 
-arrange(species_common_clean)
+  select(species_common_clean, species_science_clean, species_abbrev_clean) %>% 
+  group_by(species_abbrev_clean,species_common_clean) %>% 
+  mutate(count =  n())
 ```
+** notes **
+now need to look at the different ways general species have been coded.
+search on sp or sp. in science name and do some recoding.
+sensu lato -- equivalent to (unidentified)
+sp should be corrected to sp.
+
+
+```{r}
+skim(bird_clean)
+```
+```{r}
+bird_clean %>% 
+  select(species_common_clean,species_science_clean,species_abbrev_clean) %>% 
+    mutate(count = coalesce(count, 1) 
+           str_replace(species_common_clean,"sensu lato","(unidentified)")) 
+```
+
+```{r}
+bird_clean %>% 
+  select(species_common_clean,species_science_clean,species_abbrev_clean) %>% 
+  filter(str_detect(species_science_clean, "sp")) %>% 
+    mutate(species_science_clean = 
+           str_replace(species_science_clean,"sp.","sp")) %>% 
+    mutate(species_science_clean = 
+           str_replace(species_science_clean,"sp","sp."))  
+```
+```{r}
+bird_clean <- bird_clean %>% 
+    mutate(species_common_clean = 
+           str_replace(species_common_clean,"sensu lato","(unidentified)")) %>% 
+    mutate(count = coalesce(count, 1))
+```
+```{r}
+#join datasets
+all_bird_data <- left_join(bird_clean, ship_clean, 'record_id') %>% 
+```
+
+
+
+# highest total count
+
+```{r}
+all_bird_data %>% 
+  select(species_common_clean, species_science_clean, species_abbrev_clean, count, lat) %>% 
+  group_by(species_abbrev_clean) %>% 
+  mutate(total_num = sum(count)) 
+```
+
+
 
 
 
