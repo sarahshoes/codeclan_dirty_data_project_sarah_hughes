@@ -1,0 +1,157 @@
+---
+title: "Tak 4 - Halloween Candy"
+output: html_notebook
+---
+
+ 
+  # ============================================================================
+  
+  #  ----- File Name: halloween_candy_analysis.Rmd
+  #  ----- Description: Analysis of BoingBoing Halowwen Candy Data
+  #  ----- Output: 
+  #  ----- Created Date: 30th Nov 2022
+  #  ----- Created By: Sarah Hughes
+  
+  # ============================================================================
+  
+  #  ----- Assumptions: 
+   
+  # ============================================================================
+  
+  #  ----- Version History: v0.1
+  
+  # ============================================================================
+  
+  #  ----- Peer reviewer:
+  
+  #  ----- Peer review date:
+  
+  # ============================================================================
+  
+
+```{r Load libraries}
+# load libraries
+library(tidyverse)
+library(skimr)
+library(assertr)
+library(here)
+library(testthat)
+```
+`
+```{r Data Cleaning Script}
+# call data cleaning script
+source(here("data_cleaning_scripts","clean_candy_data.R")) 
+```
+```{r Load Cleaned data}
+# read in cleaned data
+clean_candy_data <- read_csv(here("clean_data","clean_candy_data.csv"))
+```
+
+### Q1 What is the total number of candy ratings given across the three years.
+```{r}
+clean_candy_data %>% 
+  filter(!(is.na(rating))) %>% 
+  group_by(rating) %>% 
+  summarise(count = n())
+```
+```{r}
+clean_candy_data %>% 
+  filter(!(is.na(rating))) %>% 
+  summarise(count = n())
+```
+### Q2 What was the average age of people who are going out trick or treating?
+### Q3 What was the average age of people who are NOT going trick or treating?
+```{r}
+clean_candy_data %>% 
+  select(tot_demog_q) %>% 
+  group_by(tot_demog_q) %>% 
+  summarise(count = n())
+```
+```{r}
+clean_candy_data %>% 
+  select(tot_demog_q, age_clean) %>% 
+  group_by(tot_demog_q) %>% 
+  summarise(avg_age = mean(age_clean, na.rm=TRUE))
+```
+### Q4 For each of joy, despair and meh, which candy bar received the most of these ratings?
+```{r}
+clean_candy_data %>% 
+  select(candy_type,rating) %>% 
+  filter(rating == "MEH") %>% 
+  group_by(candy_type,rating) %>% 
+  summarise(num_ratings = n()) %>% 
+  arrange(desc(num_ratings)) %>% 
+  head(1)
+```
+
+```{r}
+clean_candy_data %>% 
+  select(candy_type,rating) %>% 
+  filter(rating == "JOY") %>% 
+  group_by(candy_type,rating) %>% 
+  summarise(num_ratings = n()) %>% 
+  arrange(desc(num_ratings)) %>% 
+  head(1)
+```
+```{r}
+clean_candy_data %>% 
+  select(candy_type,rating) %>% 
+  filter(rating == "DESPAIR") %>% 
+  group_by(candy_type,rating) %>% 
+  summarise(num_ratings = n()) %>% 
+  arrange(desc(num_ratings)) %>% 
+  head(1)
+```
+### Q5 How many people rated Starburst as despair?
+```{r}
+clean_candy_data %>% 
+  select(candy_type,rating) %>% 
+  filter(candy_type == "starburst") %>% 
+  group_by(rating) %>% 
+  summarise(num_ratings = n()) 
+```
+
+### create a numeric column for rating
+```{r}
+clean_candy_data <- clean_candy_data %>% 
+  mutate(rating_num = case_when(
+    rating == "DESPAIR" ~ as.numeric(-1),
+    rating == "MEH" ~ as.numeric(0),
+    rating == "JOY" ~ as.numeric(1),
+    TRUE ~ NA_real_))
+```
+
+### Q6 Most popular candy rating
+```{r}
+clean_candy_data %>% 
+  select(gender_demog_q,candy_type,rating_num) %>% 
+  group_by(gender_demog_q,candy_type) %>% 
+  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
+  arrange(gender_demog_q,candy_type) %>% 
+  head(10)
+```
+### Q7 Most popular candy rating
+```{r}
+clean_candy_data %>% 
+  select(year,candy_type,rating_num) %>% 
+  group_by(year) %>% 
+  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
+  arrange(desc(candy_ratings)) %>% 
+  head(10)
+```
+### Q8 Most popular candy rating
+```{r}
+clean_candy_data %>% 
+  filter(!(is.na(country_clean))) %>% 
+  select(country_clean,candy_type,rating_num) %>% 
+  group_by(country_clean,candy_type) %>% 
+  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
+  arrange(desc(candy_ratings)) %>% 
+  head(10)
+```
+```{r}
+clean_candy_data %>% 
+  select(candy_type) %>%
+  arrange(desc(candy_type)) %>% 
+  distinct(candy_type)
+```
