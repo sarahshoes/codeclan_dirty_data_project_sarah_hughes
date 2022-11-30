@@ -25,10 +25,9 @@ names2015
 #identify all columns that contain a 'candy' these are items where columns have ratings as JOY or DESPAIR or NA but nothing else - do this by counting entries
 count_candy <- candy_2015 %>% 
     summarise(across(everything(),   ~{sum(.x %in% c("JOY","DESPAIR"))}  ))
-is_candy <- which(count_candy>0.25*nrow(candy_2015))
+# this filters out random instances of joy and despair in non-candy columns
+is_candy <- which(count_candy>0.25*nrow(candy_2015)) 
 ```
-
-
 
 ```{r}
 candy_2016 <- read_excel("raw_data/boing-boing-candy-2016.xlsx") 
@@ -141,6 +140,10 @@ matchtable  %>%
  filter(na_count > 0)
 ```
 
+```{r}
+clean_candy_2017 %>% 
+  select(contains("demog"))
+```
 
 
 
