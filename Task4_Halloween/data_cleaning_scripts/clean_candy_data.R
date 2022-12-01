@@ -1,4 +1,37 @@
 
+#  Notes and Assumptions ------------------------------------------------------
+
+# candy types
+# some candy names changed between years. Where an obvious match was identified
+# candy names were adjusted. The following candy_names were assumed to be 
+# equivalent
+#
+# "boxo_raisins" = "box_o_raisins",                 
+# "dark_chocolate_hershey" = "hersheys_dark_chocolate",
+# "100_grand_bar" = "x100_grand_bar",
+# "bonkers" = "bonkers_the_candy",
+# "sweetums_a_friend_to_diabetes" = "sweetums",
+# "hershey_s_kissables" = "hersheys_kisses",
+# "licorice" = "licorice_yes_black"
+# 
+# in 2015 there were candy_types of licorice and licorice_not_black
+# later this was clarified to licorice_yes_black and licorice_not_black
+# therefore the candy_type licorice for 2015 was renamed to licorice_yes_black
+# 
+# in 2015 and 2016 the category of
+# "anonymous_brown_globs_that_come_in_black_and_orange_wrappers"
+# was merged with the category of "mary_janes" to create a new category 
+# "anonymous_brown_globs_that_come_in_black_and_orange_wrappers_aka_mary_janes"
+#
+# Due to changes in survey design, 20 candy_types only appeared in 1 year and 
+# 16 candy_types only appeared in 2 years
+
+# country names
+# cascadia? probably us but left out
+
+# age notes
+# so much text in age script! had a first go at cleaning but its not right.
+
 # Load Packages ----------------------------------------------------------------
 library(tidyverse)
 library(tidyr)
@@ -13,20 +46,6 @@ library(readxl)
 # library(wordstonumbers)
 
 
-#  Section for notes ------------------------------------------------------
-
-# in 2015 and 2016 there were rating for two types of sweet
-  # anonymous_brown_globs_that_come_in_black_and_orange_wrappers	
-  # mary_janes	
-# in 2017 these two types were merged to one category  
-# ?anonymous_brown_globs_that_come_in_black_and_orange_wrappers_a_k_a_mary_janes
-
-# country notes
-# cascadia? probably us but left out
-
-# age notes
-# so much text in age script! had a first go at cleaning but its not right.
-
 # Function for identifying candy columns ----------------------------------
 
 get_candy_cols <- function(candy_data_frame) {
@@ -38,70 +57,65 @@ get_candy_cols <- function(candy_data_frame) {
   candy_cols <- which(count_candy>0.25*nrow(candy_data_frame)) 
 }
 
-# Load and clean 2015 candy data ------------------------------------------
-#candy_2015 <- read_excel("raw_data/boing-boing-candy-2015.xlsx") 
-candy_2015 <- read_excel(here("raw_data", "boing-boing-candy-2015.xlsx"))
-candy_2015 <- clean_names(candy_2015)
-
-# identify and rename standard demographic questions
-candy_2015 <- candy_2015 %>% 
-  rename(age_demog_q = how_old_are_you) %>% 
-  rename(tot_demog_q = are_you_going_actually_going_trick_or_treating_yourself)
-
-candy_cols <- get_candy_cols(candy_2015)
-clean_candy_2015 <- candy_2015 %>% 
-  pivot_longer(candy_cols, names_to ="candy_type", values_to ="rating") %>% 
-  select(age_demog_q,tot_demog_q,candy_type,rating) %>% 
-  mutate(year = 2015) # add a year column
-rm(candy_2015)
-
-# Load and clean 2016 candy data ------------------------------------------
-candy_2016 <- read_excel(here("raw_data", "boing-boing-candy-2016.xlsx"))
-candy_2016 <- clean_names(candy_2016)
-
-# identify and rename standard demographic questions
-candy_2016 <- candy_2016 %>% 
-  rename(age_demog_q = how_old_are_you) %>% 
-  rename(tot_demog_q = are_you_going_actually_going_trick_or_treating_yourself) %>% 
-  rename(country_demog_q = which_country_do_you_live_in) %>% 
-  rename(gender_demog_q = your_gender)
-
-candy_cols <- get_candy_cols(candy_2016)
-clean_candy_2016 <- candy_2016 %>% 
-  pivot_longer(candy_cols, names_to ="candy_type", values_to ="rating") %>% 
-  select(age_demog_q,tot_demog_q,country_demog_q,gender_demog_q,candy_type,rating) %>% 
- mutate(year = 2016) # add a year column
-rm(candy_2016)
-
-# Load and clean 2017 candy data ------------------------------------------
-candy_2017 <- read_excel(here("raw_data", "boing-boing-candy-2017.xlsx"))
-candy_2017 <- clean_names(candy_2017)
-
-#remove 'q_' numbers from columnn names
-org_names2017 <-  names(candy_2017)
-for (cols in 1:length(candy_2017)) {
-  names(candy_2017)[names(candy_2017)==org_names2017[cols]] <- str_remove(org_names2017[cols],"[q][1-9]+[_]")
+# Load and clean candy data for each year ------------------------------------------
+for (iyear in c(2015,2016,2017)){
+  
+  #load and clean the datafile
+  candy_year <- read_excel(here("raw_data", paste0("boing-boing-candy-",iyear,".xlsx")))
+  candy_year <- clean_names(candy_year)
+  
+  # create a unique identifier for rater
+  idlength <- nchar(as.character(nrow(candy_year)))
+  sformat <- paste0("%0",idlength,"d")
+  candy_year <- candy_year %>% 
+    mutate(id = paste0(as.character(iyear),".",sprintf(sformat,row_number())))  
+  
+  #remove 'q_' numbers from columnn names - only in 2017
+  #should probably be able to do this with dplyr?  
+  org_names <-  names(candy_year)
+  for (cols in 1:length(candy_year)) {
+    names(candy_year)[names(candy_year)==org_names[cols]] <- str_remove(org_names[cols],"[q][1-9]+[_]")
+  }  
+  
+  # identify and rename standard demographic questions = annoyingly these are different for each year
+  if (iyear==2015){
+    candy_year <- candy_year %>% 
+      rename(age_demog_q = how_old_are_you) %>% 
+      rename(tot_demog_q = 
+               are_you_going_actually_going_trick_or_treating_yourself) }
+  
+  if (iyear==2016){
+    candy_year <- candy_year %>% 
+      rename(age_demog_q = how_old_are_you) %>% 
+      rename(tot_demog_q = 
+               are_you_going_actually_going_trick_or_treating_yourself) %>% 
+      rename(country_demog_q = which_country_do_you_live_in) %>% 
+      rename(gender_demog_q = your_gender)}
+  
+  if (iyear==2017){
+    candy_year <- candy_year %>% 
+      rename(age_demog_q = age) %>% 
+      rename(tot_demog_q = going_out) %>% 
+      rename(country_demog_q = country) %>% 
+      rename(gender_demog_q = gender)} 
+  
+  candy_cols <- get_candy_cols(candy_year)
+  candy_year <- candy_year %>% 
+    pivot_longer(candy_cols, 
+                 names_to ="candy_type", 
+                 values_to ="rating") %>% 
+    select(id,age_demog_q,tot_demog_q,candy_type,rating) %>% 
+    mutate(year = iyear) # add a year column
+  
+  eval(str2lang(paste0("candy",iyear," <- candy_year")))
+  rm(candy_year)
+  
 }
-
-# identify and rename standard demographic questions
-candy_2017 <- candy_2017 %>% 
-  rename(age_demog_q = age) %>% 
-  rename(tot_demog_q = going_out) %>% 
-  rename(country_demog_q = country) %>% 
-  rename(gender_demog_q = gender) 
-
-candy_cols <- get_candy_cols(candy_2017)
-clean_candy_2017 <- candy_2017 %>% 
-  pivot_longer(candy_cols, names_to ="candy_type", values_to ="rating") %>% 
-  select(age_demog_q,tot_demog_q,country_demog_q,gender_demog_q,candy_type,rating) %>% 
-  mutate(year = 2017) # add a year column
-rm(candy_2017)
-
 
 # Joining 2015,2016 and 2017 datasets together ----------------------------
 
-joined_candy <- full_join(clean_candy_2015,clean_candy_2016)
-joined_candy <- full_join(joined_candy,clean_candy_2017)
+joined_candy <- full_join(candy2015,candy2016)
+joined_candy <- full_join(joined_candy,candy2017)
 
 candy_list <- joined_candy  %>% 
   select(candy_type) %>% 
@@ -112,6 +126,47 @@ candy_list <- joined_candy  %>%
 rm(clean_candy_2015,clean_candy_2016,clean_candy_2017)
 
 # Cleaning joined candy data ----------------------------------------------
+
+## recoding for mismatched candy names
+
+joined_candy %>% 
+          select(year,candy_type) %>% 
+          group_by(year) %>% 
+          distinct(candy_type,year)
+
+# first checking all candy_type that appears in less than 3 years
+joined_candy %>% 
+  select(year,candy_type) %>% 
+  group_by(candy_type) %>% 
+  distinct(year, candy_type) %>% 
+  arrange(candy_type) %>% 
+  summarise(count_year = n()) %>% 
+  filter(count_year<3)
+
+#code to investigate potential matches
+joined_candy %>% 
+  select(candy_type, year) %>% 
+  #filter(str_detect(candy_type, "raisins")) %>% 
+  #filter(str_detect(candy_type, "hershey")) %>% 
+  #filter(str_detect(candy_type, "100_grand")) %>% 
+  #filter(str_detect(candy_type, "bonkers")) %>% 
+  #filter(str_detect(candy_type, "sweetums")) %>% 
+  #filter(str_detect(candy_type, "mary_janes")) %>% 
+  #filter(str_detect(candy_type, "m_m")) %>% 
+  filter(str_detect(candy_type, "licorice")) %>%   
+  distinct(year, candy_type)  
+
+# redcoding candy types where there has been an obvious name change
+joined_candy <- joined_candy %>%
+  mutate(candy_type = recode(candy_type,
+   "boxo_raisins" = "box_o_raisins",                 
+   "dark_chocolate_hershey" = "hersheys_dark_chocolate",
+   "100_grand_bar" = "x100_grand_bar",
+   "bonkers" = "bonkers_the_candy",
+   "sweetums_a_friend_to_diabetes" = "sweetums",
+   "hershey_s_kissables" = "hersheys_kisses",
+   "licorice" = "licorice_yes_black"
+  ))
 
 ## cleaning country columns
 
@@ -190,16 +245,20 @@ joined_candy <- joined_candy %>%
 
 joined_candy <- joined_candy %>% 
   mutate(age_clean = case_when(
-  is.na(age_demog_q) ~ NA_real_,
+  is.na(age_demog_q) 
+              ~ NA_real_,
   #first deal with all words - no numbers
-  str_detect(age_demog_q,"\\d", negate = TRUE) ~ NA_real_,
+  str_detect(age_demog_q,"\\d", negate = TRUE) 
+              ~ NA_real_,
   #then deal with all numbers
-  str_detect(age_demog_q,"\\D") ~ as.numeric(age_demog_q),
-  #then deal with approximate ages
-  #str_detect(age_demog_q,"\\d(ish|s|'|approx|>)") ~ as.numeric(str_extract(age_demog_q  ,"\\d"{1,2})) + 5 
+  str_detect(age_demog_q,"\\D") 
+              ~ as.numeric(age_demog_q),
+  #then deal with approximate ages - NOT WORKING
+  #str_detect(age_demog_q,"\\d(ish|s|'|approx|>)") ~ as.numeric    
   #then extract any numbers from a string
-  str_detect(age_demog_q,"\\d") ~ as.numeric(str_extract(age_demog_q,"\\d{1,2}")), 
-  TRUE               ~ NA_real_)
+  str_detect(age_demog_q,"\\d") 
+              ~ as.numeric(str_extract(age_demog_q,"\\d{1,2}")), 
+         TRUE ~ NA_real_)
   )
 
 # remove age above and below expected limits
@@ -210,7 +269,7 @@ joined_candy <- joined_candy %>%
       age_clean < 1   ~ NA_real_,
                  TRUE ~ age_clean))
   
-# gender and going out? columns seem to be more controlled
+# gender and going out? columns are all clean
   
 # Write out cleaned data -------------------------------------------------------
 write_csv(joined_candy, here(
