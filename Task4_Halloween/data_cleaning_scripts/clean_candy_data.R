@@ -27,7 +27,21 @@
 # 16 candy_types only appeared in 2 years
 
 # country names
-# cascadia? probably us but left out
+
+# the country column was a free text field in the survey and as a
+# result county data i not well controlled. many entries were not real 
+# countries
+# for this analysis the focus was identifying countries of USA, Canada   # and UK, All other countries, including 'unknown' or 'non-countries' 
+# have been assigned  as 'other'
+#
+# the following have been determined as valid aliases of US
+# USA_aliases=c("amerca","ahem....amerca","murica","murrika","alaska"
+# ,"california","new york","north carolina","new jersey",
+# "the yoo ess of aaayyyyyy","trumpistan","pittsburgh",
+# "fear and loathing","cascadia")
+
+# the following have been determined as valid aliases of UK
+# UK_aliases=c("scotland","wales","england","uk")
 
 # age notes
 # so much text in age script! had a first go at cleaning but its not right.
@@ -59,16 +73,17 @@ get_candy_cols <- function(candy_data_frame) {
 
 # Load and clean candy data for each year ------------------------------------------
 for (iyear in c(2015,2016,2017)){
-  
+
   #load and clean the datafile
   candy_year <- read_excel(here("raw_data", paste0("boing-boing-candy-",iyear,".xlsx")))
   candy_year <- clean_names(candy_year)
   
-  # create a unique identifier for rater
+  # create a unique identifier for rater and a column for year
   idlength <- nchar(as.character(nrow(candy_year)))
   sformat <- paste0("%0",idlength,"d")
   candy_year <- candy_year %>% 
-    mutate(id = paste0(as.character(iyear),".",sprintf(sformat,row_number())))  
+    mutate(year= iyear) %>% 
+    mutate(rater_id = paste0(as.character(iyear-2000),".",sprintf(sformat,row_number())))  
   
   #remove 'q_' numbers from columnn names - only in 2017
   #should probably be able to do this with dplyr?  
@@ -82,33 +97,55 @@ for (iyear in c(2015,2016,2017)){
     candy_year <- candy_year %>% 
       rename(age_demog_q = how_old_are_you) %>% 
       rename(tot_demog_q = 
-               are_you_going_actually_going_trick_or_treating_yourself) }
+          are_you_going_actually_going_trick_or_treating_yourself) %>%  
+      mutate(country_demog_q = NA) %>% 
+      mutate(gender_demog_q = NA) 
+    }
   
   if (iyear==2016){
     candy_year <- candy_year %>% 
       rename(age_demog_q = how_old_are_you) %>% 
       rename(tot_demog_q = 
-               are_you_going_actually_going_trick_or_treating_yourself) %>% 
+          are_you_going_actually_going_trick_or_treating_yourself) %>% 
       rename(country_demog_q = which_country_do_you_live_in) %>% 
-      rename(gender_demog_q = your_gender)}
+      rename(gender_demog_q = your_gender)
+    }
   
   if (iyear==2017){
     candy_year <- candy_year %>% 
       rename(age_demog_q = age) %>% 
       rename(tot_demog_q = going_out) %>% 
       rename(country_demog_q = country) %>% 
-      rename(gender_demog_q = gender)} 
+      rename(gender_demog_q = gender)
+    } 
   
+# function for candy
   candy_cols <- get_candy_cols(candy_year)
-  candy_year <- candy_year %>% 
+  
+# remove empty records - where no ratings given  
+    candy_year <- candy_year %>% 
+    # sums across rows counting number of non NA values   
+    mutate(rating_check = rowSums(across(candy_cols, ~!is.na(.x)))) %>%  
+    filter(rating_check > 0) 
+  
+# extract candy data and rating data  
+  candy_year_data <- candy_year %>% 
     pivot_longer(candy_cols, 
                  names_to ="candy_type", 
                  values_to ="rating") %>% 
-    select(id,age_demog_q,tot_demog_q,candy_type,rating) %>% 
-    mutate(year = iyear) # add a year column
+    select(rater_id,year,candy_type,rating) 
+
   
-  eval(str2lang(paste0("candy",iyear," <- candy_year")))
-  rm(candy_year)
+  rater_year_data <- candy_year %>% 
+    select(rater_id,age_demog_q,tot_demog_q,
+           country_demog_q,gender_demog_q) 
+
+  
+  # save outputs to a named year variable
+  eval(str2lang(paste0("candy",iyear," <- candy_year_data")))
+  eval(str2lang(paste0("rater",iyear," <- rater_year_data")))
+  
+  rm(candy_year,candy_year_data,rater_year_data)
   
 }
 
@@ -117,22 +154,21 @@ for (iyear in c(2015,2016,2017)){
 joined_candy <- full_join(candy2015,candy2016)
 joined_candy <- full_join(joined_candy,candy2017)
 
+joined_rater <- full_join(rater2015,rater2016)
+joined_rater <- full_join(joined_rater,rater2017)
+
 candy_list <- joined_candy  %>% 
   select(candy_type) %>% 
   group_by(candy_type) %>% 
   summarise(count = n()) %>% 
   arrange(candy_type) %>% 
   pull()
-rm(clean_candy_2015,clean_candy_2016,clean_candy_2017)
+rm(candy2015,candy2016,candy2017)
+rm(rater2015,rater2016,rater2017)
 
 # Cleaning joined candy data ----------------------------------------------
 
 ## recoding for mismatched candy names
-
-joined_candy %>% 
-          select(year,candy_type) %>% 
-          group_by(year) %>% 
-          distinct(candy_type,year)
 
 # first checking all candy_type that appears in less than 3 years
 joined_candy %>% 
@@ -168,13 +204,14 @@ joined_candy <- joined_candy %>%
    "licorice" = "licorice_yes_black"
   ))
 
-## cleaning country columns
+## cleaning joined rater data
 
 # useful for testing regex
-testdata <- joined_candy %>% 
+testdata <- joined_rater %>% 
   select(country_demog_q) %>% 
   filter(!(is.na(country_demog_q))) %>% 
   pull()
+
 ind <-  which(str_detect(testdata,"u(?=n)\\w{1,}\\ss(?=t)\\w{1,}"))
 unique(testdata[ind])
 rm(testdata)
@@ -189,7 +226,7 @@ USA_aliases=c("amerca","ahem....amerca","murica","murrika","alaska","california"
 UK_aliases=c("scotland","wales","england","uk")
 
 
-joined_candy <- joined_candy %>% 
+joined_rater <- joined_rater %>% 
   mutate(country_demog_q = str_to_lower(country_demog_q)) %>% 
   mutate(country_clean = case_when(
     is.na(country_demog_q) ~ NA_character_,
@@ -222,60 +259,54 @@ joined_candy <- joined_candy %>%
     TRUE               ~ "other")
   )
 
-#check matches for a particular county
-#joined_candy %>% 
-#  select(country_clean,country_demog_q) %>% 
-#  filter(country_clean == "usa") %>% 
-#  distinct(country_demog_q)
 
-#quick summary to sense check results
-#joined_candy %>% 
-#  select(country_clean) %>% 
-#  group_by(country_clean) %>% 
-#  summarise(count = n())
+# cleaning age column  - simple version
 
-#check 'other' list doesn't actually contain anything from US, UK or Canada
-#joined_candy %>% 
-#  filter(country_clean == "other") %>% 
-#  select(country_demog_q) %>% 
-#  group_by(country_demog_q) %>% 
-#  summarise(count = n())
-
-# cleaning age column ** needs fixing **
-
-joined_candy <- joined_candy %>% 
-  mutate(age_clean = case_when(
-  is.na(age_demog_q) 
-              ~ NA_real_,
-  #first deal with all words - no numbers
-  str_detect(age_demog_q,"\\d", negate = TRUE) 
-              ~ NA_real_,
-  #then deal with all numbers
-  str_detect(age_demog_q,"\\D") 
-              ~ as.numeric(age_demog_q),
-  #then deal with approximate ages - NOT WORKING
-  #str_detect(age_demog_q,"\\d(ish|s|'|approx|>)") ~ as.numeric    
-  #then extract any numbers from a string
-  str_detect(age_demog_q,"\\d") 
-              ~ as.numeric(str_extract(age_demog_q,"\\d{1,2}")), 
-         TRUE ~ NA_real_)
-  )
+joined_rater <- joined_rater %>% 
+  mutate(age_clean = as.numeric(age_demog_q)) 
+ 
+# limited set of regex for specific situations
+# ignore numeric data from other text
+#joined_rater <- joined_rater %>%
+  #filter(is.na(age_clean)) %>%  #don't mutate if we already have an age detected
+  #mutate(age_clean = case_when (
+  # an age range (average)
+  #str_detect(age_demog_q,"[0-9]{1,3}-[0-9]{1,3}")
+  #~ ((as.numeric(str_extract(age_demog_q,"[0-9]{1,3}$"))
+  #    + as.numeric(str_extract(age_demog_q,"^[0-9]{1,3}")))/2),
+  # then deal with approximate ages (add 5)
+  #str_detect(age_demog_q,"over [1-9]") 
+  #~ (5 + as.numeric(str_extract(age_demog_q,"[0-9]{1,3}"))),
+  #str_detect(age_demog_q,"ish|'s|>|\\+") 
+  #~ (5 + as.numeric(str_extract(age_demog_q,"[0-9]{1,3}"))),
+  #TRUE ~ age_clean))  
 
 # remove age above and below expected limits
-# set between 1 and 99 for now
-  joined_candy <- joined_candy %>% 
+# set between 1 and 120 for expected age of humans
+joined_rater <- joined_rater %>% 
     mutate(age_clean = case_when(
-      age_clean >= 99 ~ NA_real_,
-      age_clean < 1   ~ NA_real_,
+          age_clean >= 120 ~ NA_real_,
+          age_clean < 1   ~ NA_real_,
                  TRUE ~ age_clean))
   
 # gender and going out? columns are all clean
   
+#tidy and check data types before writing out
+joined_candy<- joined_candy %>% 
+     mutate(rater_id = as.double(rater_id))
+  
+ joined_rater<- joined_rater %>% 
+      rename(gender_clean = gender_demog_q, tot_clean = tot_demog_q) %>%  
+      select(rater_id,age_clean,country_clean,tot_clean,gender_clean) %>% 
+      mutate(rater_id = as.double(rater_id), age_clean = as.numeric(age_clean))
+  
 # Write out cleaned data -------------------------------------------------------
 write_csv(joined_candy, here(
     "clean_data", "clean_candy_data.csv"))
-  
-  print("clean data script completed")
+write_csv(joined_rater, here(
+    "clean_data", "clean_rater_data.csv")) 
+
+print("clean data script completed")
   
   
   

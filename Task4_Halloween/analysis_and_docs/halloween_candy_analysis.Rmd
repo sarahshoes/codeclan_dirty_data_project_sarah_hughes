@@ -45,37 +45,49 @@ source(here("data_cleaning_scripts","clean_candy_data.R"))
 ```{r Load Cleaned data}
 # read in cleaned data
 clean_candy_data <- read_csv(here("clean_data","clean_candy_data.csv"))
+clean_rater_data <- read_csv(here("clean_data","clean_rater_data.csv"))
+
+clean_candy_all<-  left_join(clean_candy_data,clean_rater_data)
 ```
+
+```{r Investigation}
+clean_candy_all %>% 
+  select(rater_id) %>% 
+  distinct(rater_id)
+```
+
+
+
 
 ### Q1 What is the total number of candy ratings given across the three years.
 ```{r}
-clean_candy_data %>% 
+clean_candy_all %>% 
   filter(!(is.na(rating))) %>% 
   group_by(rating) %>% 
   summarise(count = n())
 ```
 ```{r}
-clean_candy_data %>% 
+clean_candy_all %>% 
   filter(!(is.na(rating))) %>% 
   summarise(count = n())
 ```
 ### Q2 What was the average age of people who are going out trick or treating?
 ### Q3 What was the average age of people who are NOT going trick or treating?
 ```{r}
-clean_candy_data %>% 
-  select(tot_demog_q) %>% 
-  group_by(tot_demog_q) %>% 
+clean_candy_all %>% 
+  select(tot_clean) %>% 
+  group_by(tot_clean) %>% 
   summarise(count = n())
 ```
 ```{r}
-clean_candy_data %>% 
-  select(tot_demog_q, age_clean) %>% 
-  group_by(tot_demog_q) %>% 
+clean_candy_all %>% 
+  select(tot_clean, age_clean) %>% 
+  group_by(tot_clean) %>% 
   summarise(avg_age = mean(age_clean, na.rm=TRUE))
 ```
 ### Q4 For each of joy, despair and meh, which candy bar received the most of these ratings?
 ```{r}
-clean_candy_data %>% 
+clean_candy_all %>% 
   select(candy_type,rating) %>% 
   filter(rating == "MEH") %>% 
   group_by(candy_type,rating) %>% 
@@ -85,7 +97,7 @@ clean_candy_data %>%
 ```
 
 ```{r}
-clean_candy_data %>% 
+clean_candy_all %>% 
   select(candy_type,rating) %>% 
   filter(rating == "JOY") %>% 
   group_by(candy_type,rating) %>% 
@@ -94,7 +106,7 @@ clean_candy_data %>%
   head(1)
 ```
 ```{r}
-clean_candy_data %>% 
+clean_candy_all %>% 
   select(candy_type,rating) %>% 
   filter(rating == "DESPAIR") %>% 
   group_by(candy_type,rating) %>% 
@@ -104,7 +116,7 @@ clean_candy_data %>%
 ```
 ### Q5 How many people rated Starburst as despair?
 ```{r}
-clean_candy_data %>% 
+clean_candy_all %>% 
   select(candy_type,rating) %>% 
   filter(candy_type == "starburst") %>% 
   group_by(rating) %>% 
@@ -113,7 +125,7 @@ clean_candy_data %>%
 
 ### create a numeric column for rating
 ```{r}
-clean_candy_data <- clean_candy_data %>% 
+clean_candy_all <- clean_candy_all %>% 
   mutate(rating_num = case_when(
     rating == "DESPAIR" ~ as.numeric(-1),
     rating == "MEH" ~ as.numeric(0),
@@ -123,16 +135,16 @@ clean_candy_data <- clean_candy_data %>%
 
 ### Q6 Most popular candy rating
 ```{r}
-clean_candy_data %>% 
-  select(gender_demog_q,candy_type,rating_num) %>% 
-  group_by(gender_demog_q,candy_type) %>% 
+clean_candy_all %>% 
+  select(gender_clean,candy_type,rating_num) %>% 
+  group_by(gender_clean,candy_type) %>% 
   summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
-  arrange(gender_demog_q,candy_type) %>% 
+  arrange(gender_clean,candy_type) %>% 
   head(10)
 ```
 ### Q7 Most popular candy rating
 ```{r}
-clean_candy_data %>% 
+clean_candy_all %>% 
   select(year,candy_type,rating_num) %>% 
   group_by(year) %>% 
   summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
@@ -141,7 +153,7 @@ clean_candy_data %>%
 ```
 ### Q8 Most popular candy rating
 ```{r}
-clean_candy_data %>% 
+clean_candy_all %>% 
   filter(!(is.na(country_clean))) %>% 
   select(country_clean,candy_type,rating_num) %>% 
   group_by(country_clean,candy_type) %>% 
@@ -150,7 +162,7 @@ clean_candy_data %>%
   head(10)
 ```
 ```{r}
-clean_candy_data %>% 
+clean_candy_all %>% 
   select(candy_type) %>%
   arrange(desc(candy_type)) %>% 
   distinct(candy_type)
