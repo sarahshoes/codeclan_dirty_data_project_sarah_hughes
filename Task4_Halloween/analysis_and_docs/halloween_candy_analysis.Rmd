@@ -1,47 +1,82 @@
 ---
-title: "Tak 4 - Halloween Candy"
+title: "Task 4 - Halloween Candy"
 output: html_notebook
 ---
 
- 
-  # ============================================================================
-  
-  #  ----- File Name: halloween_candy_analysis.Rmd
-  #  ----- Description: Analysis of BoingBoing Halowwen Candy Data
-  #  ----- Output: 
-  #  ----- Created Date: 30th Nov 2022
-  #  ----- Created By: Sarah Hughes
-  
-  # ============================================================================
-  
-  #  ----- Assumptions: 
-   
-  # ============================================================================
-  
-  #  ----- Version History: v0.1
-  
-  # ============================================================================
-  
-  #  ----- Peer reviewer:
-  
-  #  ----- Peer review date:
-  
-  # ============================================================================
-  
+=================================================================
+
+\# ----- File Name: halloween_candy_analysis.Rmd \# ----- Description: Analysis
+of boingboing halloween candy data. This data is collected in an annual survey,
+the purpose of the survey is to determine which candy is most popular by asking
+the question. This analysis combines data from the years 2015, 2016 and 2017.
+The dataset contains demographic data for each rater: age, gender, country and
+'going out trick or treating' intention. Demographic data was an optional field
+and so there are some missing data. Note that country and gender data were not
+collected in 2015.
+
+Candy has been rated using a 3 point scale from 'despair-meh-joy'. A numeric
+rating for each candy has been calculated using the formulas despair = 1, meh =0
+and joy =-1. 
+
+\# ----- Output: \# ----- Created Date: 30th Nov 2022 \# ----- Created By: Sarah
+Hughes
+
+=================================================================
+
+\# ----- Assumptions:
+
+Age Data
+
+Rater ages have been marked as NA if they fell outside expected limits, 
+minimum age =1 and maximum age = 120. If an age range was given than an assumed age was calculated as the average of the range. If an approximate age was given (e.g. 40's, 50+ or 30ish) the age was assumed to be the decade + 5. Where age was recorded as 'old', age was set to 75.
+
+Country Data
+
+In the analysis, all countries not identified as either usa, canada, uk or usa
+have been assigned to 'other'. This includes some entries that don't match known
+countries.
+
+Candy Data
+
+The following candy types have been identified as equivalent
+
+1.  boxo_raisins = box_o\_raisins
+
+2.  dark_chocolate_hershey = hersheys_dark_chocolate
+
+3.  100_grand_bar = x100_grand_bar
+
+4.  bonkers = bonkers_the_candy
+
+5.  sweetums_a\_friend_to_diabetes = sweetums
+
+6.  hershey_s\_kissables = hersheys_kisses
+
+7.  licorice = licorice_yes_black
+
+=====================================================
+
+\# ----- Version History: v0.1
+
+=====================================================
+
+\# ----- Peer reviewer:
+
+\# ----- Peer review date:
+
+=====================================================
 
 ```{r Load libraries}
 # load libraries
 library(tidyverse)
-library(skimr)
-library(assertr)
 library(here)
-library(testthat)
 ```
-`
+
 ```{r Data Cleaning Script}
-# call data cleaning script
-source(here("data_cleaning_scripts","clean_candy_data.R")) 
+# if not already run call data cleaning script here
+# source(here("data_cleaning_scripts","clean_candy_data.R")) 
 ```
+
 ```{r Load Cleaned data}
 # read in cleaned data
 clean_candy_data <- read_csv(here("clean_data","clean_candy_data.csv"))
@@ -50,115 +85,250 @@ clean_rater_data <- read_csv(here("clean_data","clean_rater_data.csv"))
 clean_candy_all<-  left_join(clean_candy_data,clean_rater_data)
 ```
 
-```{r Investigation}
+```{r Summary}
 clean_candy_all %>% 
   select(rater_id) %>% 
   distinct(rater_id)
+
+clean_candy_all %>% 
+  select(candy_type) %>% 
+  distinct(candy_type)
 ```
 
 
 
 
-### Q1 What is the total number of candy ratings given across the three years.
+
 ```{r}
 clean_candy_all %>% 
-  filter(!(is.na(rating))) %>% 
   group_by(rating) %>% 
   summarise(count = n())
 ```
+
 ```{r}
-clean_candy_all %>% 
-  filter(!(is.na(rating))) %>% 
+all_ratings <- clean_candy_all %>% 
   summarise(count = n())
 ```
-### Q2 What was the average age of people who are going out trick or treating?
-### Q3 What was the average age of people who are NOT going trick or treating?
+
+T
 ```{r}
-clean_candy_all %>% 
-  select(tot_clean) %>% 
-  group_by(tot_clean) %>% 
-  summarise(count = n())
-```
-```{r}
-clean_candy_all %>% 
+clean_rater_data %>% 
   select(tot_clean, age_clean) %>% 
   group_by(tot_clean) %>% 
-  summarise(avg_age = mean(age_clean, na.rm=TRUE))
-```
-### Q4 For each of joy, despair and meh, which candy bar received the most of these ratings?
-```{r}
-clean_candy_all %>% 
-  select(candy_type,rating) %>% 
-  filter(rating == "MEH") %>% 
-  group_by(candy_type,rating) %>% 
-  summarise(num_ratings = n()) %>% 
-  arrange(desc(num_ratings)) %>% 
-  head(1)
+  summarise(avg_age = mean(age_clean, na.rm=TRUE), count=n())
 ```
 
 ```{r}
 clean_candy_all %>% 
   select(candy_type,rating) %>% 
-  filter(rating == "JOY") %>% 
+  filter(rating == "joy") %>% 
   group_by(candy_type,rating) %>% 
-  summarise(num_ratings = n()) %>% 
+  summarise(num_ratings = n(), 
+            percent_rated = 100*(num_ratings/nrow(clean_rater_data))) %>% 
   arrange(desc(num_ratings)) %>% 
-  head(1)
+  head(3)
 ```
+
+The candy bar 'any_full_sized_candy_bar' received the most 'joy' ratings. A
+total of 7589 ratings, from 88% of raters.
+
 ```{r}
 clean_candy_all %>% 
   select(candy_type,rating) %>% 
-  filter(rating == "DESPAIR") %>% 
+  filter(rating == "meh") %>% 
   group_by(candy_type,rating) %>% 
-  summarise(num_ratings = n()) %>% 
+  summarise(num_ratings = n(), 
+            percent_rated = 100*(num_ratings/nrow(clean_rater_data))) %>% 
   arrange(desc(num_ratings)) %>% 
-  head(1)
+  head(3)
 ```
-### Q5 How many people rated Starburst as despair?
+
+'lollipops' received the most 'meh' ratings, with 1570 in total. 18% of raters
+gave this rating over the three years
+
 ```{r}
 clean_candy_all %>% 
-  select(candy_type,rating) %>% 
-  filter(candy_type == "starburst") %>% 
+  select(candy_type, rating) %>% 
+  filter(rating == "despair") %>% 
+  group_by(candy_type, rating) %>% 
+  summarise(num_ratings = n(), 
+            percent_rated = 100*(num_ratings/nrow(clean_rater_data))) %>% 
+  arrange(desc(num_ratings)) %>% 
+  head(3)
+```
+
+
+
+```{r}
+clean_candy_all %>% 
+  select(candy_type, rating) %>% 
+  filter(candy_type == "starburst", rating == "despair") %>% 
   group_by(rating) %>% 
   summarise(num_ratings = n()) 
 ```
 
-### create a numeric column for rating
+
 ```{r}
 clean_candy_all <- clean_candy_all %>% 
   mutate(rating_num = case_when(
-    rating == "DESPAIR" ~ as.numeric(-1),
-    rating == "MEH" ~ as.numeric(0),
-    rating == "JOY" ~ as.numeric(1),
+    rating == "despair" ~ as.numeric(-1),
+    rating == "meh" ~ as.numeric(0),
+    rating == "joy" ~ as.numeric(1),
     TRUE ~ NA_real_))
 ```
 
-### Q6 Most popular candy rating
+
+```{r}
+clean_rater_data %>% 
+   select(gender_clean) %>%
+   group_by(gender_clean) %>% 
+   summarise(count = n())
+```
+
 ```{r}
 clean_candy_all %>% 
-  select(gender_clean,candy_type,rating_num) %>% 
-  group_by(gender_clean,candy_type) %>% 
+  select(gender_clean, candy_type, rating_num) %>% 
+  filter(gender_clean == "male") %>% 
+  group_by(gender_clean, candy_type) %>% 
   summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
-  arrange(gender_clean,candy_type) %>% 
-  head(10)
+  arrange(desc(candy_ratings)) %>% 
+  head(3)
 ```
-### Q7 Most popular candy rating
+
+```{r}
+clean_candy_all %>% 
+  select(gender_clean, candy_type, rating_num) %>% 
+  filter(gender_clean == "female") %>% 
+  group_by(gender_clean, candy_type) %>% 
+  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
+  arrange(desc(candy_ratings)) %>% 
+  head(3)
+```
+
+```{r}
+clean_candy_all %>% 
+  select(gender_clean, candy_type, rating_num) %>% 
+  filter(gender_clean == "prefer not to say") %>% 
+  group_by(gender_clean, candy_type) %>% 
+  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
+  arrange(desc(candy_ratings)) %>% 
+  head(3)
+```
+
+```{r}
+clean_candy_all %>% 
+  select(gender_clean, candy_type, rating_num) %>% 
+  filter(gender_clean == "other") %>% 
+  group_by(gender_clean, candy_type) %>% 
+  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
+  arrange(desc(candy_ratings)) %>% 
+  head(3)
+```
+```{r}
+clean_candy_all %>% 
+  select(gender_clean, candy_type, rating_num) %>% 
+  filter(is.na(gender_clean)) %>% 
+  group_by(gender_clean, candy_type) %>% 
+  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
+  arrange(desc(candy_ratings)) %>% 
+  head(3)
+```
+
+```{r}
+clean_rater_data %>% 
+   group_by(year) %>% 
+   summarise(count = n())
+```
+
 ```{r}
 clean_candy_all %>% 
   select(year,candy_type,rating_num) %>% 
-  group_by(year) %>% 
+  group_by(candy_type,year) %>% 
   summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
-  arrange(desc(candy_ratings)) %>% 
-  head(10)
+  filter(year == 2015) %>% 
+  arrange(desc(candy_ratings),year) %>% 
+  head(1)
 ```
-### Q8 Most popular candy rating
+
 ```{r}
 clean_candy_all %>% 
-  filter(!(is.na(country_clean))) %>% 
+  select(year,candy_type,rating_num) %>% 
+  group_by(candy_type,year) %>% 
+  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
+  filter(year == 2016) %>% 
+  arrange(desc(candy_ratings),year) %>% 
+  head(1)
+```
+
+```{r}
+clean_candy_all %>% 
+  select(year,candy_type,rating_num) %>% 
+  group_by(candy_type,year) %>% 
+  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
+  filter(year == 2017) %>% 
+  arrange(desc(candy_ratings),year) %>% 
+  head(1)
+```
+
+```{r}
+#check 2015 data
+clean_candy_all %>% 
+  filter(year==2015) %>% 
+  group_by(rating) %>% 
+  summarise(count = n())
+```
+
+```{r}
+clean_rater_data %>% 
+   group_by(country_clean) %>% 
+   summarise(count = n())
+```
+
+```{r}
+clean_candy_all %>% 
+  filter(country_clean=="usa") %>% 
   select(country_clean,candy_type,rating_num) %>% 
-  group_by(country_clean,candy_type) %>% 
+  group_by(candy_type) %>% 
   summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
   arrange(desc(candy_ratings)) %>% 
+  head(1)
+```
+
+```{r}
+clean_candy_all %>% 
+  filter(country_clean=="canada") %>% 
+  select(country_clean,candy_type,rating_num) %>% 
+  group_by(candy_type) %>% 
+  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
+  arrange(desc(candy_ratings)) %>% 
+  head(1)
+```
+
+```{r}
+clean_candy_all %>% 
+  filter(country_clean=="uk") %>% 
+  select(country_clean,candy_type,rating_num) %>% 
+  group_by(country_clean, candy_type) %>% 
+  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
+  arrange(country_clean,desc(candy_ratings)) %>% 
+  head(10)
+```
+```{r}
+clean_candy_all %>% 
+  filter(country_clean=="other") %>% 
+  select(country_clean,candy_type,rating_num) %>% 
+  group_by(country_clean, candy_type) %>% 
+  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
+  arrange(country_clean,desc(candy_ratings)) %>% 
+  head(10)
+```
+```{r}
+clean_candy_all %>% 
+  filter(is.na(country_clean)) %>% 
+  select(country_clean,candy_type,rating_num) %>% 
+  group_by(country_clean, candy_type) %>% 
+  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
+  arrange(country_clean,desc(candy_ratings)) %>% 
   head(10)
 ```
 ```{r}

@@ -1,0 +1,154 @@
+---
+title: "Halloween Candy Data"
+author: "Sarah Hughes"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    css: ../../../../styles.css
+    df_print: paged
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Summary
+
+Analysis of Halloween candy data. This data is collected in an annual
+survey, the purpose of the survey is to determine which candy is most popular by asking raters the question, "How do you feel when you see this candy in your halloween haul?"
+
+Using this dataset we have examined the average candy ratings by gender, country and by year.
+
+## Method
+
+This analysis combines data collected in three different yearsm 2015, 2016 and 2017.
+
+The dataset contains demographic data for each rater: age, gender, country and
+'going out trick or treating' intention. Demographic data was an optional field
+and so there are some missing data. Note that country and gender data were not
+collected in 2015.
+
+The survey data uses a 3 point scale 'despair-meh-joy', from lowest rating of despair to highest rating of joy. In this analysis, a numeric rating for each candy, the "appreciation index",  has been calculated using the formula despair = 1, meh =0 and joy =-1. 
+
+## Project Data
+
+Raw data for this project was prject was provided in 3 files, one for each country.
+boing-boing-candy-2015.xlsx, boing-boing-candy-2016.xlsx and boing-boing-candy-2017.xlsx. 
+
+Using the cleaning script, 'clean_candy_data.R' data from each year were cleaned and two data files created. Each rater was given a unique identifier and two data tables were created. 
+
+The table clean_candy_data_csv contains all candy types and ratings. The data columns are id, year, candy_type and rating.
+
+The table clean_rater_data.csv contains demographic information for each rater who completed the survey. The data columns are 
+
+ *id - unique identifier for individual survey participant (rater)
+ *year - the year survey was completed
+ *age - the age of the rater in years
+ *gender - categories are male, female, other and prefer not to say.
+ *tot - 'going out' intent indicates if participant was intending on going out trick or treating
+ *country - categories are usa, canada, uk and other. 
+
+## Assumptions
+
+*Age Data*
+
+Rater ages have been marked as NA if they fell outside expected limits, 
+minimum age =1 and maximum age = 120. If an age range was given than an assumed age was calculated as the average of the range. If an approximate age was given (e.g. 40's, 50+ or 30ish) the age was assumed to be the decade + 5. Where age was recorded as 'old', age was set to 75.
+
+*Country Data*
+
+In the analysis, all countries not identified as either usa, canada, uk or usa
+have been assigned to 'other'. This includes some entries that don't match known
+countries.
+
+*Candy Data*
+
+The following candy types were identified as equivalent and matched across the three different year datasets.
+
+1.  boxo_raisins = box_o\_raisins
+
+2.  dark_chocolate_hershey = hersheys_dark_chocolate
+
+3.  100_grand_bar = x100_grand_bar
+
+4.  bonkers = bonkers_the_candy
+
+5.  sweetums_a\_friend_to_diabetes = sweetums
+
+6.  hershey_s\_kissables = hersheys_kisses
+
+7.  licorice = licorice_yes_black
+
+# Results
+
+A total of 8592 raters, with ratings across three separate years 2015, 2016 and 2017. 118 different candy types were rated. The number of candy types available for rating in each year varied, with 82 candy types appearing consistently in each year of the survey. 20 candy types appeared in just one year of the survey and 16 candy types appeared in two of the survey years.
+
+## What is the total number of candy ratings given across the three years.
+
+The total number of ratings over the years of data was 772,352
+
+## What was the average age of people who are going out trick or treating?
+
+The average age of those who were going out trick or treating was 35
+
+## What was the average age of people who are not going trick or treating?
+
+The average age of those who were not going trick or treating was 39.
+
+## For each of joy, despair and meh, which candy bar received the most of these ratings?
+
+The candy bar 'any_full_sized_candy_bar' received the most 'joy' ratings. A
+total of 7589 ratings, from 88% of raters. 
+
+'lollipops' received the most 'meh' ratings, with 1570 in total. 18% of raters
+gave this rating over the three years
+
+'broken_glow_sticks' received the most 'despair' ratings, with 7905 in total. 92%
+of raters gave this rating
+
+## How many people rated Starburst as despair?
+
+1990 people rated Starbursts as despair.
+
+## Most popular candy rating for each gender?
+
+Where gender data are available, the majority of survey recipients were male. The table below shows the appreciation rating of the most highly appreciated candy by gender. The maximum possible rating is calculated from the number of survey participants in each gender category (n), and a percentage  appreciation calculation (%) is also included. Note that gender data were not collected in 2015, so 5552 of the ratings had no gender value. 
+
+| **gender**        | **candy type**           | **appreciation rating** | **n** | **%** |
+|-------------------|--------------------------|-------------------------|-------|-------|
+| male              | any_full_sized_candy_bar | 1584                    | 1881  | 84%   |
+| female            | any_full_sized_candy_bar | 875                     | 1027  | 85%   |
+| prefer not to say | any_full_sized_candy_bar | 69                      | 89    | 77%   |
+| other             | any_full_sized_candy_bar | 37                      | 43    | 86%   |
+| NA                | any_full_sized_candy_bar | 4618                    | 5552  | 86%   |
+
+The candy with the highest appreciation index was any_full_sized_candy_bar and this was consistent across all gender categories. There was some variation in the % appreciation rating, those whose gender was 'prefer not to' say had the lowest % appreciation rating of 77% for this candy bar.  
+
+## Most popular candy rating by year ?
+
+The number of raters completing the survey varied between years, with the highest number of survey participants on 2015 (4603) and the lowest in 2016 (1037). The table below shows the appreciation rating of the most highly appreciated candy by year. The maximum possible rating is calculated from the number of survey participants in each year category (n), and a percentage  appreciation calculation (%) is also included.
+
+| **year** | **candy type**           | **appreciation rating** | **n** | **%** |
+|----------|--------------------------|-------------------------|-------|-------|
+| 2015     | any_full_sized_candy_bar | 4603                    | 5533  | 84%   |
+| 2016     | any_full_sized_candy_bar | 1037                    | 1256  | 83%   |
+| 2017     | any_full_sized_candy_bar | 1542                    | 1803  | 86%   |
+
+The candy with the highest appreciation rating was any_full_sized_candy_bar, in each year of the survey. The appreciation rating for this bar was highest in the 2017 data, with an 86% appreciation rating. 
+
+## Most popular candy rating by country ?
+
+The majority of survey participants came from the USA. The table below shows the appreciation rating of the most highly appreciated candy by country. The maximum possible rating is calculated from the number of survey participants in each country category (n), and a percentage  appreciation calculation (%) is also included. Note that country data were not collected in 2015, and 5575 of the ratings had no country value.
+
+| **country**  | **candy type**                      | **appreciation rating** | **n** | **%** |
+|--------------|-------------------------------------|-------------------------|-------|-------|
+| USA          | any_full_sized_candy_bar            | 2180                    | 2592  | 84%   |
+| Canada       | any_full_sized_candy_bar            | 253                     | 279   | 91%   |
+| UK           | cash_or_other_forms_of_legal_tender | 34                      | 44    | 77%   |
+| Other        | any_full_sized_candy_bar            | 80                      | 102   | 78%   |
+| NA           | any_full_sized_candy_bar            | 4636                    | 5575  | 83%   |
+
+There was some variation in the most appreciated candy bar between countries. In the USA and Canada, and 'other' countries, the most highly appreciated candy was any_full_sized_candy_bar with appreciation % ratings of 84%, 91% and 78% respectively. In the UK, the most appreciated candy was cash_or_other_forms_of_legal_tender. The % appreciation rating for this candy, for raters from the UK was 77%.
