@@ -24,7 +24,7 @@ Using this dataset we have examined the average candy ratings by gender, country
 
 ## Method
 
-This analysis combines data collected in three different yearsm 2015, 2016 and 2017.
+This analysis combines data collected in three different years 2015, 2016 and 2017.
 
 The dataset contains demographic data for each rater: age, gender, country and
 'going out trick or treating' intention. Demographic data was an optional field
@@ -35,22 +35,39 @@ The survey data uses a 3 point scale 'despair-meh-joy', from lowest rating of de
 
 ## Project Data
 
-Raw data for this project was prject was provided in 3 files, one for each country.
+Raw data for this project was project was provided in 3 files, one for each country.
 boing-boing-candy-2015.xlsx, boing-boing-candy-2016.xlsx and boing-boing-candy-2017.xlsx. 
+
+More information on this dataset can be found  [here](https://www.scq.ubc.ca/so-much-candy-data-seriously/)
 
 Using the cleaning script, 'clean_candy_data.R' data from each year were cleaned and two data files created. Each rater was given a unique identifier and two data tables were created. 
 
-The table clean_candy_data_csv contains all candy types and ratings. The data columns are id, year, candy_type and rating.
+The table clean_candy_data_csv contains all candy types and ratings. The data columns are as follows:
 
-The table clean_rater_data.csv contains demographic information for each rater who completed the survey. The data columns are 
+    *id - unique identifier for individual survey participant (rater)
+ 
+    *year - the year survey was completed
+    
+    *candy_type - the name of the candy being rated. 
+    
+    *rating - the rating given, values can be joy, meh or despair. 
 
- *id - unique identifier for individual survey participant (rater)
- *year - the year survey was completed
- *age - the age of the rater in years
- *gender - categories are male, female, other and prefer not to say.
- *tot - 'going out' intent indicates if participant was intending on going out trick or treating
- *country - categories are usa, canada, uk and other. 
+The table clean_rater_data.csv contains demographic information for each rater who completed the survey. The data columns are as follows.
 
+    *id - unique identifier for individual survey participant (rater)
+ 
+    *year - the year survey was completed
+ 
+    *age_clean - the age of the rater in years
+ 
+    *gender_clean - categories are male, female, other and prefer not to say.
+ 
+     *tot_clean - 'going out' intent indicates if participant was intending on going out trick or treating
+ 
+     *country_clean - categories are usa, canada, uk and other
+ 
+ Data analysis for the project was completed using 'halloween_candy_analysis.Rmd'
+ 
 ## Assumptions
 
 *Age Data*
@@ -66,7 +83,7 @@ countries.
 
 *Candy Data*
 
-The following candy types were identified as equivalent and matched across the three different year datasets.
+Note that not all of the candy types could be defined as edible candy. However all of the data have been included. The following candy types were identified as equivalent and matched across the three different year datasets.
 
 1.  boxo_raisins = box_o\_raisins
 

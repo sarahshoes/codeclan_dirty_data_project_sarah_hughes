@@ -2774,7 +2774,7 @@ this candy in your halloween haul?”</p>
 gender, country and by year.</p>
 <div id="method" class="section level2" number="1.1">
 <h2><span class="header-section-number">1.1</span> Method</h2>
-<p>This analysis combines data collected in three different yearsm 2015,
+<p>This analysis combines data collected in three different years 2015,
 2016 and 2017.</p>
 <p>The dataset contains demographic data for each rater: age, gender,
 country and ‘going out trick or treating’ intention. Demographic data
@@ -2787,29 +2787,46 @@ using the formula despair = 1, meh =0 and joy =-1.</p>
 </div>
 <div id="project-data" class="section level2" number="1.2">
 <h2><span class="header-section-number">1.2</span> Project Data</h2>
-<p>Raw data for this project was prject was provided in 3 files, one for
-each country. boing-boing-candy-2015.xlsx, boing-boing-candy-2016.xlsx
-and boing-boing-candy-2017.xlsx.</p>
+<p>Raw data for this project was project was provided in 3 files, one
+for each country. boing-boing-candy-2015.xlsx,
+boing-boing-candy-2016.xlsx and boing-boing-candy-2017.xlsx.</p>
+<p>More information on this dataset can be found <a href="https://www.scq.ubc.ca/so-much-candy-data-seriously/">here</a></p>
 <p>Using the cleaning script, ‘clean_candy_data.R’ data from each year
 were cleaned and two data files created. Each rater was given a unique
 identifier and two data tables were created.</p>
 <p>The table clean_candy_data_csv contains all candy types and ratings.
-The data columns are id, year, candy_type and rating.</p>
+The data columns are as follows:</p>
+<pre><code>*id - unique identifier for individual survey participant (rater)
+
+*year - the year survey was completed
+
+*candy_type - the name of the candy being rated. 
+
+*rating - the rating given, values can be joy, meh or despair. </code></pre>
 <p>The table clean_rater_data.csv contains demographic information for
-each rater who completed the survey. The data columns are</p>
-<p><em>id - unique identifier for individual survey participant (rater)
-</em>year - the year survey was completed <em>age - the age of the rater
-in years </em>gender - categories are male, female, other and prefer not
-to say. <em>tot - ‘going out’ intent indicates if participant was
-intending on going out trick or treating </em>country - categories are
-usa, canada, uk and other.</p>
+each rater who completed the survey. The data columns are as
+follows.</p>
+<pre><code>*id - unique identifier for individual survey participant (rater)
+
+*year - the year survey was completed
+
+*age_clean - the age of the rater in years
+
+*gender_clean - categories are male, female, other and prefer not to say.
+
+ *tot_clean - &#39;going out&#39; intent indicates if participant was intending on going out trick or treating
+
+ *country_clean - categories are usa, canada, uk and other</code></pre>
 </div>
 <div id="assumptions" class="section level2" number="1.3">
 <h2><span class="header-section-number">1.3</span> Assumptions</h2>
 <p><em>Age Data</em></p>
 <p>Rater ages have been marked as NA if they fell outside expected
-limits, minimum age =1 and maximum age = 120. Where age was recorded as
-old, age was set to 75.</p>
+limits, minimum age =1 and maximum age = 120. If an age range was given
+than an assumed age was calculated as the average of the range. If an
+approximate age was given (e.g. 40’s, 50+ or 30ish) the age was assumed
+to be the decade + 5. Where age was recorded as ‘old’, age was set to
+75.</p>
 <p><em>Country Data</em></p>
 <p>In the analysis, all countries not identified as either usa, canada,
 uk or usa have been assigned to ‘other’. This includes some entries that
