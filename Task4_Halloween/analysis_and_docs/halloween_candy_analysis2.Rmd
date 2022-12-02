@@ -1,8 +1,8 @@
 ---
-title: "Task 4 - Halloween Candy"
+title: "Task 4 - Halloween Candy2"
 output: html_notebook
 ---
-
+ 2nd version containing some tweaks from codeshare
 =================================================================
 
 \# ----- File Name: halloween_candy_analysis.Rmd \# ----- Description: Analysis
@@ -74,7 +74,7 @@ library(here)
 
 ```{r Data Cleaning Script}
 # if not already run call data cleaning script here
-# source(here("data_cleaning_scripts","clean_candy_data.R")) 
+source(here("data_cleaning_scripts","clean_candy_data2.R")) 
 ```
 
 ```{r Load Cleaned data}
@@ -194,54 +194,13 @@ clean_candy_all %>%
   slice_max(candy_ratings) 
 ```
 
-
+** should have used slice max!! **
 ```{r}
 clean_candy_all %>% 
   select(gender_clean, candy_type, rating_num) %>% 
-  filter(gender_clean == "male") %>% 
   group_by(gender_clean, candy_type) %>% 
   summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
-  arrange(desc(candy_ratings)) %>% 
-  head(3)
-```
-
-```{r}
-clean_candy_all %>% 
-  select(gender_clean, candy_type, rating_num) %>% 
-  filter(gender_clean == "female") %>% 
-  group_by(gender_clean, candy_type) %>% 
-  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
-  arrange(desc(candy_ratings)) %>% 
-  head(3)
-```
-
-```{r}
-clean_candy_all %>% 
-  select(gender_clean, candy_type, rating_num) %>% 
-  filter(gender_clean == "prefer not to say") %>% 
-  group_by(gender_clean, candy_type) %>% 
-  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
-  arrange(desc(candy_ratings)) %>% 
-  head(3)
-```
-
-```{r}
-clean_candy_all %>% 
-  select(gender_clean, candy_type, rating_num) %>% 
-  filter(gender_clean == "other") %>% 
-  group_by(gender_clean, candy_type) %>% 
-  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
-  arrange(desc(candy_ratings)) %>% 
-  head(3)
-```
-```{r}
-clean_candy_all %>% 
-  select(gender_clean, candy_type, rating_num) %>% 
-  filter(is.na(gender_clean)) %>% 
-  group_by(gender_clean, candy_type) %>% 
-  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
-  arrange(desc(candy_ratings)) %>% 
-  head(3)
+  slice_max(candy_ratings) 
 ```
 
 ```{r}
@@ -253,40 +212,11 @@ clean_rater_data %>%
 ```{r}
 clean_candy_all %>% 
   select(year, candy_type, rating_num) %>% 
-  group_by(candy_type,year) %>% 
+  group_by(year, candy_type) %>% 
   summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
-  filter(year == 2015) %>% 
-  arrange(desc(candy_ratings),year) %>% 
-  head(1)
+  slice_max(candy_ratings)
 ```
 
-```{r}
-clean_candy_all %>% 
-  select(year, candy_type, rating_num) %>% 
-  group_by(candy_type,year) %>% 
-  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
-  filter(year == 2016) %>% 
-  arrange(desc(candy_ratings),year) %>% 
-  head(1)
-```
-
-```{r}
-clean_candy_all %>% 
-  select(year, candy_type, rating_num) %>% 
-  group_by(candy_type,year) %>% 
-  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
-  filter(year == 2017) %>% 
-  arrange(desc(candy_ratings),year) %>% 
-  head(1)
-```
-
-```{r}
-#check 2015 data
-clean_candy_all %>% 
-  filter(year==2015) %>% 
-  group_by(rating) %>% 
-  summarise(count = n())
-```
 
 ```{r}
 clean_rater_data %>% 
@@ -306,44 +236,17 @@ clean_candy_all %>%
 
 ```{r}
 clean_candy_all %>% 
-  filter(country_clean=="canada") %>% 
   select(country_clean, candy_type, rating_num) %>% 
-  group_by(candy_type) %>% 
+  group_by(country_clean, candy_type) %>% 
   summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
-  arrange(desc(candy_ratings)) %>% 
-  head(1)
+  slice_max(candy_ratings) %>% 
+  arrange(desc(candy_ratings))
 ```
 
-```{r}
-clean_candy_all %>% 
-  filter(country_clean=="uk") %>% 
-  select(country_clean, candy_type, rating_num) %>% 
-  group_by(country_clean, candy_type) %>% 
-  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
-  arrange(country_clean,desc(candy_ratings)) %>% 
-  head(10)
-```
-```{r}
-clean_candy_all %>% 
-  filter(country_clean=="other") %>% 
-  select(country_clean, candy_type, rating_num) %>% 
-  group_by(country_clean, candy_type) %>% 
-  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
-  arrange(country_clean, desc(candy_ratings)) %>% 
-  head(10)
-```
-```{r}
-clean_candy_all %>% 
-  filter(is.na(country_clean)) %>% 
-  select(country_clean, candy_type,r ating_num) %>% 
-  group_by(country_clean, candy_type) %>% 
-  summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
-  arrange(country_clean, desc(candy_ratings)) %>% 
-  head(10)
-```
 ```{r}
 clean_candy_all %>% 
   select(candy_type) %>%
   arrange(desc(candy_type)) %>% 
   distinct(candy_type)
 ```
+

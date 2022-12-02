@@ -1,0 +1,43 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Notes from codeshare after dirty data project review.
+
+Somehow my function worked when it shouldnt have (still not 100% sure why)
+I assigned my function results into a variable that lives inside the function.
+Best practise not to do this.. remember that the last thing that is evaluated gets returned.
+
+In analysis I should have used slice_max and slice_min. Remember to look up these functions and try to use them
+
+tally() is a good thing to use maybe instead of count?
+
+changing all country names to snake case or simply removing all punctuation marks would have made cleaning easier.
+
+rowid_to_column could have been useful for creating the unique identifier.
+ 
+I should have made sure my id was written as a character. Because it was numeric it lost the trailing zeros when being read in and out again.
+
+I got some of the regex wrong - but it seems like so did everyone - dont be too despondent!
+
+I could have just smushed all the three datasets together earlier on (with ) and then done cleaning on that.
+Pivot longer would still have worked even when multiple repeated columns were being created. 
+That would have reduced the size of my 'for-loop'.
+
+I used eval(srt2lang) but 'assign' would have been better
+
+```{r}
+
+  candy_2015 <- read_excel(here("raw_data", 
+                                paste0("boing-boing-candy-2015.xlsx")))
+  candy_2015 <- clean_names(candy_2015) 
+  
+  candy_2016 <- read_excel(here("raw_data", 
+                                paste0("boing-boing-candy-2016.xlsx")))
+  candy_2015 <- clean_names(candy_2016) 
+
+  merged_data <- bind_rows(candy_2015,candy_2016)
+```
+
+f

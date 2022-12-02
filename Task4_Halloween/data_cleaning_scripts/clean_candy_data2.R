@@ -1,3 +1,4 @@
+# 2nd version incorporating tweaks learned from codeshare
 
 #  Notes and Assumptions ------------------------------------------------------
 
@@ -55,12 +56,13 @@
 library(tidyverse)
 library(tidyr)
 library(janitor)
-library(assertr)
 library(here)
 library(skimr)
 library(readxl)
+library(snakecase)
 
 # Function for identifying candy columns in datasets----------------------------------
+# dont need to assign variable in function
 
 get_candy_cols <- function(candy_data_frame) {
   # first use summarise to count how many values 
@@ -72,7 +74,6 @@ get_candy_cols <- function(candy_data_frame) {
   # of the words in another column.
   which(count_candy>0.25*nrow(candy_data_frame)) 
 }
-
 
 # Load and clean candy data for each year ------------------------------------------
 
@@ -86,12 +87,13 @@ for (iyear in years){
   candy_year <- clean_names(candy_year) 
   
   # create a unique identifier for each rater and a column for year
-  idlength <- nchar(as.character(nrow(candy_year)))
+  idlength <- nchar(as.character(nrow(candy_year))) #will work no matter how many rows
   sformat <- paste0("%0",idlength,"d")
   candy_year <- candy_year %>% 
     mutate(year = iyear) %>% 
     mutate(rater_id = 
-          paste0(as.character(iyear-2000),".",sprintf(sformat,row_number())))  
+          paste0(as.character(iyear-2000),"x",sprintf(sformat,row_number())))  
+    #adding an underscore rather than '.' avoids it being read as a number later  
   
   # remove 'q_' numbers from columnn names - only needed in 2017
   candy_year <- candy_year %>% 
@@ -210,9 +212,10 @@ joined_candy <- joined_candy %>%
 testdata <- joined_rater %>% 
   select(country_demog_q) %>% 
   filter(!(is.na(country_demog_q))) %>% 
+  distinct(country_demog_q) %>% 
   pull()
 
-ind <-  which(str_detect(testdata,"u(?=n)\\w{1,}\\ss(?=t)\\w{1,}"))
+ind <-  which(str_detect(testdata,"u(?=n)\\w{1,}\\_s(?=t)\\w{1,}"))
 unique(testdata[ind])
 rm(testdata, ind)
 
@@ -220,40 +223,40 @@ rm(testdata, ind)
 # all other countries (including non-countries) set to other
 
 # the following have been set as valid aliases of usa
-usa_aliases=c("amerca","ahem....amerca","murica","murrika","alaska",
-              "california","new york","north carolina","new jersey",
-              "the yoo ess of aaayyyyyy","trumpistan","pittsburgh",
-              "Fear and Loathing","cascadia")
+usa_aliases=c("amerca","ahem_amerca","murica","murrika","alaska",
+              "california","new_york","north_carolina","new_jersey",
+              "the_yoo_ess_of_aaayyyyyy","trumpistan","pittsburgh",
+              "fear_and_loathing","cascadia","u_nited_states")
 
 # the following have been set as valid aliases of UK
 uk_aliases=c("scotland","wales","england","uk")
 
 joined_rater <- joined_rater %>% 
-  mutate(country_demog_q = str_to_lower(country_demog_q)) %>% 
+  mutate(country_demog_q = to_snake_case(country_demog_q)) %>% 
   mutate(country_clean = case_when(
     is.na(country_demog_q) ~ NA_character_,
     #captures annoying response!
-    str_detect(country_demog_q,"not the usa or canada") ~ "usa",
+    str_detect(country_demog_q,"not the usa or canada") ~ "other",
     #captures us and usa excludes australia
     str_detect(country_demog_q,"u(?=s(?!t))") ~ "usa",
     # captures america and variants
     str_detect(country_demog_q,"merica") ~ "usa",
-    # captures variations on u.s and u s
-    str_detect(country_demog_q,"[u][\\.|\\s][s]") ~ "usa",
+    # captures variations u_s
+    str_detect(country_demog_q,"[u][\\_][s]") ~ "usa",
     # captures cases where a state was identified - assume all us states
     str_detect(country_demog_q,"[1-9][1-9]") ~ "usa", 
     #captures versions of un... with space followed by st...
     str_detect(country_demog_q,
-               "u(?=n)\\w{1,}\\ss\\w{1,}") ~ "usa",
+               "u(?=n)\\w{1,}\\_s\\w{1,}") ~ "usa",
     # everything else I gave up trying on
     (country_demog_q %in% usa_aliases) ~ "usa",
     #all versions of canada start with can
     str_detect(country_demog_q,"^can") ~ "canada",
     #captures variations on u.k and u k
-    str_detect(country_demog_q,"[u][\\.|\\s][k]") ~ "uk",
-    #captures all versions of un... with space followed by ki...
+    #str_detect(country_demog_q,"[u][\\.|\\s][k]") ~ "uk",
+    #captures all versions of un... with _ followed by ki...
     str_detect(country_demog_q,
-               "u(?=n)\\w{1,}\\sk(?=i)\\w{1,}") ~ "uk", 
+               "u(?=n)\\w{1,}\\_k(?=i)\\w{1,}") ~ "uk", 
     #identifies nations within UK as UK
     (country_demog_q %in% uk_aliases) ~"uk",
     #allows for misspellings of england
@@ -261,7 +264,13 @@ joined_rater <- joined_rater %>%
                                   TRUE ~ "other")
   )
 
-rm(uk_aliases,usa_aliases)
+#check_results
+lookup = joined_rater %>% 
+  filter(country_clean == "other") %>% 
+  select(country_clean, country_demog_q) %>% 
+  distinct(country_demog_q, country_clean)
+
+rm(uk_aliases,usa_aliases,lookup, col_list)
 
 # cleaning age column  - simple version
 joined_rater <- joined_rater %>% 
@@ -297,7 +306,6 @@ joined_rater <- joined_rater %>%
 
 # tidy up and check data types before writing out
 joined_candy <- joined_candy %>% 
-  mutate(rater_id = as.double(rater_id)) %>% 
   mutate(rating = str_to_lower(rating)) %>% 
   drop_na(rating) #remove unecessary lines
 
@@ -308,8 +316,7 @@ joined_rater <- joined_rater %>%
                      "i'd rather not say" =  "prefer not to say")) %>% 
   mutate(tot_clean = str_to_lower(tot_clean)) %>%
   select(rater_id, year, age_clean, country_clean, tot_clean, gender_clean) %>% 
-  mutate(rater_id = as.double(rater_id), 
-         age_clean = as.numeric(age_clean))
+  mutate(age_clean = as.numeric(age_clean))
   
 # Write out finalised cleaned data ---------------------------------------------
 
@@ -318,6 +325,7 @@ write_csv(joined_candy, here(
 write_csv(joined_rater, here(
     "clean_data", "clean_rater_data.csv")) 
 
+rm(joined_candy, joined_rater)
 print("clean data script completed")
   
   
