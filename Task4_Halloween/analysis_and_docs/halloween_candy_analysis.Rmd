@@ -79,8 +79,8 @@ library(here)
 
 ```{r Load Cleaned data}
 # read in cleaned data
-clean_candy_data <- read_csv(here("clean_data","clean_candy_data.csv"))
-clean_rater_data <- read_csv(here("clean_data","clean_rater_data.csv"))
+clean_candy_data <- read_csv(here("clean_data", "clean_candy_data.csv"))
+clean_rater_data <- read_csv(here("clean_data", "clean_rater_data.csv"))
 
 clean_candy_all<-  left_join(clean_candy_data,clean_rater_data)
 ```
@@ -120,9 +120,9 @@ clean_rater_data %>%
 
 ```{r}
 clean_candy_all %>% 
-  select(candy_type,rating) %>% 
+  select(candy_type, rating) %>% 
   filter(rating == "joy") %>% 
-  group_by(candy_type,rating) %>% 
+  group_by(candy_type, rating) %>% 
   summarise(num_ratings = n(), 
             percent_rated = 100*(num_ratings/nrow(clean_rater_data))) %>% 
   arrange(desc(num_ratings)) %>% 
@@ -134,9 +134,9 @@ total of 7589 ratings, from 88% of raters.
 
 ```{r}
 clean_candy_all %>% 
-  select(candy_type,rating) %>% 
+  select(candy_type, rating) %>% 
   filter(rating == "meh") %>% 
-  group_by(candy_type,rating) %>% 
+  group_by(candy_type, rating) %>% 
   summarise(num_ratings = n(), 
             percent_rated = 100*(num_ratings/nrow(clean_rater_data))) %>% 
   arrange(desc(num_ratings)) %>% 
@@ -242,7 +242,7 @@ clean_rater_data %>%
 
 ```{r}
 clean_candy_all %>% 
-  select(year,candy_type,rating_num) %>% 
+  select(year, candy_type, rating_num) %>% 
   group_by(candy_type,year) %>% 
   summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
   filter(year == 2015) %>% 
@@ -252,7 +252,7 @@ clean_candy_all %>%
 
 ```{r}
 clean_candy_all %>% 
-  select(year,candy_type,rating_num) %>% 
+  select(year, candy_type, rating_num) %>% 
   group_by(candy_type,year) %>% 
   summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
   filter(year == 2016) %>% 
@@ -262,7 +262,7 @@ clean_candy_all %>%
 
 ```{r}
 clean_candy_all %>% 
-  select(year,candy_type,rating_num) %>% 
+  select(year, candy_type, rating_num) %>% 
   group_by(candy_type,year) %>% 
   summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
   filter(year == 2017) %>% 
@@ -287,7 +287,7 @@ clean_rater_data %>%
 ```{r}
 clean_candy_all %>% 
   filter(country_clean=="usa") %>% 
-  select(country_clean,candy_type,rating_num) %>% 
+  select(country_clean, candy_type, rating_num) %>% 
   group_by(candy_type) %>% 
   summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
   arrange(desc(candy_ratings)) %>% 
@@ -297,7 +297,7 @@ clean_candy_all %>%
 ```{r}
 clean_candy_all %>% 
   filter(country_clean=="canada") %>% 
-  select(country_clean,candy_type,rating_num) %>% 
+  select(country_clean, candy_type, rating_num) %>% 
   group_by(candy_type) %>% 
   summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
   arrange(desc(candy_ratings)) %>% 
@@ -307,7 +307,7 @@ clean_candy_all %>%
 ```{r}
 clean_candy_all %>% 
   filter(country_clean=="uk") %>% 
-  select(country_clean,candy_type,rating_num) %>% 
+  select(country_clean, candy_type, rating_num) %>% 
   group_by(country_clean, candy_type) %>% 
   summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
   arrange(country_clean,desc(candy_ratings)) %>% 
@@ -316,19 +316,19 @@ clean_candy_all %>%
 ```{r}
 clean_candy_all %>% 
   filter(country_clean=="other") %>% 
-  select(country_clean,candy_type,rating_num) %>% 
+  select(country_clean, candy_type, rating_num) %>% 
   group_by(country_clean, candy_type) %>% 
   summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
-  arrange(country_clean,desc(candy_ratings)) %>% 
+  arrange(country_clean, desc(candy_ratings)) %>% 
   head(10)
 ```
 ```{r}
 clean_candy_all %>% 
   filter(is.na(country_clean)) %>% 
-  select(country_clean,candy_type,rating_num) %>% 
+  select(country_clean, candy_type,r ating_num) %>% 
   group_by(country_clean, candy_type) %>% 
   summarise(candy_ratings = sum(rating_num, na.rm= TRUE)) %>% 
-  arrange(country_clean,desc(candy_ratings)) %>% 
+  arrange(country_clean, desc(candy_ratings)) %>% 
   head(10)
 ```
 ```{r}
